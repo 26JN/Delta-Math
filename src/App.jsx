@@ -5,12 +5,20 @@ import { TopNav } from './components/TopNav.jsx';
 import { HologramHUD } from './components/HologramHUD.jsx';
 import { GameOverlay } from './components/GameOverlay.jsx';
 import { AddGameModal } from './components/AddGameModal.jsx';
+import { DeltaMathView } from './components/DeltaMathView.jsx';
+import { PasscodeModal } from './components/PasscodeModal.jsx';
 import { soundFX } from './utils/audio.js';
 
 const STORAGE_KEY_FAVS = 'unblocked_fav_games';
 const STORAGE_KEY_CUSTOM = 'unblocked_custom_games';
 
 export default function App() {
+  // Disguise / Unlock state: Starts in DeltaMath mode as requested
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showUnlockToast, setShowUnlockToast] = useState(false);
+
   const [games, setGames] = useState(INITIAL_GAMES);
   const [favorites, setFavorites] = useState([]);
   const [activeGame, setActiveGame] = useState(null);
@@ -21,6 +29,38 @@ export default function App() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Sync document title to current mode
+  useEffect(() => {
+    if (!isUnlocked) {
+      document.title = 'DeltaMath - Student Dashboard';
+    } else if (activeGame) {
+      document.title = `${activeGame.title} - 3D Unblocked Games Hub`;
+    } else {
+      document.title = '3D Unblocked Games Hub';
+    }
+  }, [isUnlocked, activeGame]);
+
+  // Global hotkeys: '~' or '\' to open secret passcode from DeltaMath; 'Escape' to panic back to DeltaMath
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (!isUnlocked) {
+        if (e.key === '`' || e.key === '~' || e.key === '\\') {
+          e.preventDefault();
+          soundFX.playKeyClick();
+          setIsPasscodeOpen(true);
+        }
+      } else {
+        // If in games view and no active game or modal is open, pressing 'p' or 'Escape' cloaks back to DeltaMath
+        if ((e.key === 'Escape' || e.key === 'p' || e.key === 'P') && !activeGame && !isAddModalOpen) {
+          soundFX.playClose();
+          setIsUnlocked(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isUnlocked, activeGame, isAddModalOpen]);
 
   // Load favorites & custom games from localStorage on mount
   useEffect(() => {
@@ -33,8 +73,9 @@ export default function App() {
       const savedCustom = localStorage.getItem(STORAGE_KEY_CUSTOM);
       const customGames = savedCustom ? JSON.parse(savedCustom) : [];
 
-      // Fetch games from JSON file (as requested)
-      fetch('/games.json')
+      // Fetch games from JSON file (relative path for GitHub Pages compatibility)
+      const gamesUrl = `${import.meta.env.BASE_URL || './'}games.json`.replace('//', '/');
+      fetch(gamesUrl)
         .then((res) => {
           if (!res.ok) throw new Error('Failed to fetch games.json');
           return res.json();
@@ -47,7 +88,6 @@ export default function App() {
           }
         })
         .catch(() => {
-          // Graceful fallback to initial games
           setGames([...customGames, ...INITIAL_GAMES]);
         });
     } catch {
@@ -59,6 +99,36 @@ export default function App() {
   useEffect(() => {
     soundFX.enabled = soundEnabled;
   }, [soundEnabled]);
+
+  // Handle Passcode Success (1234 entered): Apple-quality transition
+  const handlePasscodeSuccess = useCallback(() => {
+    setIsPasscodeOpen(false);
+    setIsTransitioning(true);
+    soundFX.playTransitionWhoosh();
+
+    setTimeout(() => {
+      setIsUnlocked(true);
+      setIsTransitioning(false);
+      setShowUnlockToast(true);
+      setTimeout(() => setShowUnlockToast(false), 4500);
+    }, 850);
+  }, []);
+
+  // Return / Cloak back to DeltaMath
+  const handleCloakToDeltaMath = useCallback(() => {
+    soundFX.playClose();
+    setActiveGame(null);
+    setIsUnlocked(false);
+  }, []);
+
+  // Memoized handlers to keep Three.js scene rock solid
+  const handleHoverGame = useCallback((game) => {
+    setHoveredGame(game);
+  }, []);
+
+  const handleSelectGame = useCallback((game) => {
+    setActiveGame(game);
+  }, []);
 
   // Toggle favorite
   const handleToggleFavorite = useCallback((gameId) => {
@@ -95,7 +165,7 @@ export default function App() {
     return ['All', 'Favorites', ...rawCategories];
   }, [games]);
 
-  // Filtered games list for random picker & counts
+  // Filtered games list
   const filteredGames = useMemo(() => {
     return games.filter((game) => {
       if (activeCategory === 'Favorites') {
@@ -116,7 +186,7 @@ export default function App() {
     });
   }, [games, activeCategory, favorites, searchQuery]);
 
-  // Pick a random game from currently available
+  // Pick random game
   const handleRandomGame = useCallback(() => {
     const pool = filteredGames.length > 0 ? filteredGames : games;
     if (pool.length === 0) return;
@@ -124,12 +194,42 @@ export default function App() {
     setActiveGame(random);
   }, [filteredGames, games]);
 
+  // 1. Initial State: Authentic DeltaMath Platform View
+  if (!isUnlocked && !isTransitioning) {
+    return (
+      <div className="relative w-full min-h-screen">
+        <DeltaMathView onOpenSecretCode={() => setIsPasscodeOpen(true)} />
+        <PasscodeModal
+          isOpen={isPasscodeOpen}
+          onClose={() => setIsPasscodeOpen(false)}
+          onSuccess={handlePasscodeSuccess}
+        />
+      </div>
+    );
+  }
+
+  // 2. Active Unblocked 3D Games Hub with Apple Website Quality Transition
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#050505] text-white font-['Plus_Jakarta_Sans',sans-serif] select-none">
+    <div
+      className={`relative w-screen h-screen overflow-hidden bg-[#050505] text-white font-['Plus_Jakarta_Sans',sans-serif] select-none ${
+        isTransitioning ? 'animate-portal' : 'animate-apple-in'
+      }`}
+    >
+      {/* Apple-grade Transition Aperture Veil */}
+      {isTransitioning && (
+        <div className="fixed inset-0 z-[90] pointer-events-none bg-radial from-transparent via-black/40 to-black animate-pulse" />
+      )}
+
       {/* Frosted Glass Neon Atmosphere Gradients */}
       <div className="absolute inset-0 opacity-40 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[55%] h-[55%] bg-[#00FFCC] rounded-full blur-[140px] animate-pulse" style={{ animationDuration: '9s' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[60%] bg-[#7000FF] rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '12s' }} />
+        <div
+          className="absolute top-[-10%] left-[-10%] w-[55%] h-[55%] bg-[#00FFCC] rounded-full blur-[140px] animate-pulse"
+          style={{ animationDuration: '9s' }}
+        />
+        <div
+          className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[60%] bg-[#7000FF] rounded-full blur-[120px] animate-pulse"
+          style={{ animationDuration: '12s' }}
+        />
       </div>
 
       {/* Three.js Interactive 3D WebGL Canvas */}
@@ -139,11 +239,11 @@ export default function App() {
         searchQuery={searchQuery}
         layoutMode={layoutMode}
         autoRotate={autoRotate}
-        onSelectGame={(game) => setActiveGame(game)}
-        onHoverGame={(game) => setHoveredGame(game)}
+        onSelectGame={handleSelectGame}
+        onHoverGame={handleHoverGame}
       />
 
-      {/* Top HUD: Search, Categories, Layout Modes, Random Launcher */}
+      {/* Top HUD: Search, Categories, Layout Modes, Random Launcher & DeltaMath Disguise */}
       <TopNav
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -158,6 +258,7 @@ export default function App() {
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
         onRandomGame={handleRandomGame}
         onOpenAddModal={() => setIsAddModalOpen(true)}
+        onCloakToDeltaMath={handleCloakToDeltaMath}
         totalGames={games.length}
         favCount={favorites.length}
       />
@@ -165,10 +266,18 @@ export default function App() {
       {/* Bottom Hologram HUD / Tooltip */}
       <HologramHUD
         hoveredGame={hoveredGame}
-        onSelectGame={(game) => setActiveGame(game)}
+        onSelectGame={handleSelectGame}
         isFavorite={hoveredGame ? favorites.includes(hoveredGame.id) : false}
         onToggleFavorite={handleToggleFavorite}
       />
+
+      {/* Unlock Toast Notification */}
+      {showUnlockToast && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/50 backdrop-blur-xl text-emerald-300 text-xs font-mono font-bold shadow-[0_0_30px_rgba(52,211,153,0.3)] animate-in fade-in slide-in-from-top-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span>ACCESS GRANTED • PRESS ESC OR CLICK Δ DELTAMATH TO RETURN TO CLASS</span>
+        </div>
+      )}
 
       {/* Frosted Glass Telemetry Status Footer */}
       <footer className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none hidden sm:flex items-center justify-between px-4 py-1.5 border-t border-white/10 bg-black/40 backdrop-blur-md text-[10px] font-mono tracking-wider text-white/50">

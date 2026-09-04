@@ -30,6 +30,7 @@ export const TopNav = ({
   onToggleSound,
   onRandomGame,
   onOpenAddModal,
+  onCloakToDeltaMath,
   totalGames,
   favCount,
 }) => {
@@ -193,6 +194,22 @@ export const TopNav = ({
             ) : (
               <VolumeX className="w-3.5 h-3.5" />
             )}
+          </button>
+
+          {/* Discreet DeltaMath Disguise / Cloak button */}
+          <button
+            id="deltamath-cloak-btn"
+            onClick={() => {
+              soundFX.playClose();
+              if (onCloakToDeltaMath) {
+                onCloakToDeltaMath();
+              }
+            }}
+            title="Instant Stealth Cloak: Return to DeltaMath"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-600/30 hover:bg-[#0047AB] border border-blue-400/40 text-blue-200 hover:text-white text-xs font-bold transition shadow-[0_0_12px_rgba(0,71,171,0.3)] cursor-pointer"
+          >
+            <span className="font-serif font-black text-sm text-blue-300">Δ</span>
+            <span className="hidden xl:inline">DeltaMath</span>
           </button>
         </div>
       </div>

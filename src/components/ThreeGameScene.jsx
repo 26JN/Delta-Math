@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { soundFX } from '../utils/audio.js';
 
@@ -126,6 +126,17 @@ export const ThreeGameScene = ({
 }) => {
   const mountRef = useRef(null);
   const hoveredGameRef = useRef(null);
+  const [sceneReady, setSceneReady] = useState(false);
+
+  // Stable callback refs to avoid recreating the entire Three.js canvas on App state updates
+  const onHoverGameRef = useRef(onHoverGame);
+  onHoverGameRef.current = onHoverGame;
+
+  const onSelectGameRef = useRef(onSelectGame);
+  onSelectGameRef.current = onSelectGame;
+
+  const autoRotateRef = useRef(autoRotate);
+  autoRotateRef.current = autoRotate;
 
   // Keep references to Three.js objects for smooth manipulation
   const sceneRef = useRef(null);
@@ -141,7 +152,7 @@ export const ThreeGameScene = ({
   const mouseScreenRef = useRef(new THREE.Vector2(-9999, -9999));
   const raycasterRef = useRef(new THREE.Raycaster());
 
-  // Setup Three.js scene
+  // Setup Three.js scene ONCE on mount
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -150,6 +161,7 @@ export const ThreeGameScene = ({
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x050505, 0.018);
     sceneRef.current = scene;
+    setSceneReady(true);
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(
@@ -314,7 +326,9 @@ export const ThreeGameScene = ({
           );
           if (found) {
             soundFX.playSelect();
-            onSelectGame(found.game);
+            if (onSelectGameRef.current) {
+              onSelectGameRef.current(found.game);
+            }
           }
         }
       }
@@ -335,7 +349,7 @@ export const ThreeGameScene = ({
       const elapsedTime = clock.getElapsedTime();
 
       // Auto rotation if enabled and not currently dragging
-      if (autoRotate && !isDraggingRef.current) {
+      if (autoRotateRef.current && !isDraggingRef.current) {
         targetCameraAngleRef.current.theta += 0.0018;
       }
 
@@ -387,7 +401,9 @@ export const ThreeGameScene = ({
 
       if (currentlyHovered?.id !== hoveredGameRef.current?.id) {
         hoveredGameRef.current = currentlyHovered;
-        onHoverGame(currentlyHovered);
+        if (onHoverGameRef.current) {
+          onHoverGameRef.current(currentlyHovered);
+        }
         if (currentlyHovered) {
           soundFX.playHover();
         }
@@ -449,7 +465,7 @@ export const ThreeGameScene = ({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [autoRotate, onHoverGame, onSelectGame]);
+  }, []); // Run once on mount! Stable callbacks stored in refs
 
   // Re-calculate & build game 3D objects whenever `games` or layout changes
   useEffect(() => {
@@ -571,7 +587,7 @@ export const ThreeGameScene = ({
         originalY: targetPos.y,
       });
     });
-  }, [games, layoutMode]);
+  }, [sceneReady, games, layoutMode]);
 
   // Handle Filtering (dim/scale non-matching games)
   useEffect(() => {

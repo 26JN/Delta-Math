@@ -9,3 +9,33 @@
     scrollbar-width: none;
   }
 }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+@keyframes applePulse {
+  0% { transform: scale(0.97); opacity: 0; filter: blur(12px); }
+  50% { transform: scale(1.02); opacity: 0.8; filter: blur(4px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0px); }
+}
+
+@keyframes portalExpand {
+  0% { clip-path: circle(0% at 50% 50%); }
+  100% { clip-path: circle(150% at 50% 50%); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.animate-portal {
+  animation: portalExpand 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-apple-in {
+  animation: applePulse 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

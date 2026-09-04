@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeltaMath - Student Dashboard</title>
+    <script>
+      // Single Page Application redirect for GitHub Pages
+      (function () {
+        var segmentCount = 1;
+        var location = window.location;
+        var pathname = location.pathname;
+        // Redirect back to root index.html preserving route query and hash
+        var target = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') +
+          pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/';
+        window.location.replace(target);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to application...</p>
+  </body>
+</html>

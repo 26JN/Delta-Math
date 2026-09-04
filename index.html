@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Unblocked Games Hub</title>
+    <script>
+      // Fix for GitHub Pages subpaths: ensure trailing slash so relative assets (./assets/...) always resolve correctly
+      (function() {
+        var path = window.location.pathname;
+        if (
+          window.location.hostname.endsWith('github.io') &&
+          !path.endsWith('/') &&
+          !path.split('/').pop().includes('.')
+        ) {
+          window.location.replace(path + '/' + window.location.search + window.location.hash);
+        }
+      })();
+    </script>
     <meta name="description" content="A top-tier 3D interactive portal for unblocked web games featuring 3D holographic cartridges, dynamic lighting, search and category filtering, and fullscreen iframe gameplay." />
     <meta property="og:title" content="3D Unblocked Games Hub" />
     <meta property="og:description" content="A top-tier 3D interactive portal for unblocked web games featuring 3D holographic cartridges, dynamic lighting, search and category filtering, and fullscreen iframe gameplay." />

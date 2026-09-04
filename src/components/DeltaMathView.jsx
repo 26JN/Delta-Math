@@ -28,6 +28,14 @@ export const DeltaMathView = ({ onOpenSecretCode }) => {
     e.preventDefault();
     soundFX.playKeyClick();
     const clean = userAnswer.replace(/\s+/g, '').toLowerCase();
+
+    // Secret passkey trigger right inside math input: 0711 or 1234
+    if (clean.includes('0711') || clean.includes('1234')) {
+      soundFX.playTransitionWhoosh();
+      onOpenSecretCode();
+      return;
+    }
+
     // Accept x=1, x=2 or 1,2 or (1,2)
     if (
       clean.includes('1') &&

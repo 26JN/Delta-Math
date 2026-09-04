@@ -7,10 +7,14 @@ import { GameOverlay } from './components/GameOverlay.jsx';
 import { AddGameModal } from './components/AddGameModal.jsx';
 import { DeltaMathView } from './components/DeltaMathView.jsx';
 import { PasscodeModal } from './components/PasscodeModal.jsx';
+import { VipPasscodeModal } from './components/VipPasscodeModal.jsx';
+import { GameBrowserDrawer } from './components/GameBrowserDrawer.jsx';
 import { soundFX } from './utils/audio.js';
+import { Crown, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY_FAVS = 'unblocked_fav_games';
 const STORAGE_KEY_CUSTOM = 'unblocked_custom_games';
+const STORAGE_KEY_VIP = 'unblocked_vip_0711';
 
 export default function App() {
   // Disguise / Unlock state: Starts in DeltaMath mode as requested
@@ -18,6 +22,19 @@ export default function App() {
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showUnlockToast, setShowUnlockToast] = useState(false);
+  const [unlockToastMessage, setUnlockToastMessage] = useState('');
+
+  // VIP section passkey state (Code: 0711)
+  const [isVipUnlocked, setIsVipUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY_VIP) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isVipModalOpen, setIsVipModalOpen] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [focusedGame, setFocusedGame] = useState(null);
 
   const [games, setGames] = useState(INITIAL_GAMES);
   const [favorites, setFavorites] = useState([]);
@@ -100,8 +117,8 @@ export default function App() {
     soundFX.enabled = soundEnabled;
   }, [soundEnabled]);
 
-  // Handle Passcode Success (1234 entered): Apple-quality transition
-  const handlePasscodeSuccess = useCallback(() => {
+  // Handle Passcode Success (0711 or 1234 entered): Apple-quality transition
+  const handlePasscodeSuccess = useCallback((isVip = false) => {
     setIsPasscodeOpen(false);
     setIsTransitioning(true);
     soundFX.playTransitionWhoosh();
@@ -109,9 +126,35 @@ export default function App() {
     setTimeout(() => {
       setIsUnlocked(true);
       setIsTransitioning(false);
+      if (isVip) {
+        setIsVipUnlocked(true);
+        try {
+          localStorage.setItem(STORAGE_KEY_VIP, 'true');
+        } catch {
+          // ignore
+        }
+        setUnlockToastMessage('👑 VIP 24K EXECUTIVE ACCESS GRANTED');
+      } else {
+        setUnlockToastMessage('ACCESS GRANTED • PRESS ESC OR CLICK Δ DELTAMATH TO RETURN TO CLASS');
+      }
       setShowUnlockToast(true);
-      setTimeout(() => setShowUnlockToast(false), 4500);
+      setTimeout(() => setShowUnlockToast(false), 5000);
     }, 850);
+  }, []);
+
+  // Handle dedicated VIP Vault Passcode Success (0711)
+  const handleVipPasscodeSuccess = useCallback(() => {
+    setIsVipModalOpen(false);
+    setIsVipUnlocked(true);
+    try {
+      localStorage.setItem(STORAGE_KEY_VIP, 'true');
+    } catch {
+      // ignore
+    }
+    setUnlockToastMessage('👑 VIP 24K GOLD VAULT UNLOCKED • 216+ TITLES ACTIVATED');
+    setShowUnlockToast(true);
+    soundFX.playVipFanfare();
+    setTimeout(() => setShowUnlockToast(false), 5000);
   }, []);
 
   // Return / Cloak back to DeltaMath
@@ -128,6 +171,12 @@ export default function App() {
 
   const handleSelectGame = useCallback((game) => {
     setActiveGame(game);
+  }, []);
+
+  // Focus a game in 3D scene from catalog drawer
+  const handleFocusGameInScene = useCallback((game) => {
+    setFocusedGame(game);
+    setHoveredGame(game);
   }, []);
 
   // Toggle favorite
@@ -162,14 +211,20 @@ export default function App() {
   // Categories list
   const categories = useMemo(() => {
     const rawCategories = Array.from(new Set(games.map((g) => g.category)));
-    return ['All', 'Favorites', ...rawCategories];
-  }, [games]);
+    const base = ['All', 'Favorites'];
+    if (isVipUnlocked) {
+      base.push('VIP Exclusive');
+    }
+    return [...base, ...rawCategories];
+  }, [games, isVipUnlocked]);
 
   // Filtered games list
   const filteredGames = useMemo(() => {
     return games.filter((game) => {
       if (activeCategory === 'Favorites') {
         if (!favorites.includes(game.id)) return false;
+      } else if (activeCategory === 'VIP Exclusive') {
+        if (!game.vip) return false;
       } else if (activeCategory !== 'All') {
         if (game.category.toLowerCase() !== activeCategory.toLowerCase()) return false;
       }
@@ -223,11 +278,15 @@ export default function App() {
       {/* Frosted Glass Neon Atmosphere Gradients */}
       <div className="absolute inset-0 opacity-40 pointer-events-none overflow-hidden z-0">
         <div
-          className="absolute top-[-10%] left-[-10%] w-[55%] h-[55%] bg-[#00FFCC] rounded-full blur-[140px] animate-pulse"
+          className={`absolute top-[-10%] left-[-10%] w-[55%] h-[55%] rounded-full blur-[140px] animate-pulse transition-all duration-700 ${
+            isVipUnlocked ? 'bg-[#f59e0b]' : 'bg-[#00FFCC]'
+          }`}
           style={{ animationDuration: '9s' }}
         />
         <div
-          className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[60%] bg-[#7000FF] rounded-full blur-[120px] animate-pulse"
+          className={`absolute bottom-[-10%] right-[-10%] w-[45%] h-[60%] rounded-full blur-[120px] animate-pulse transition-all duration-700 ${
+            isVipUnlocked ? 'bg-[#fbbf24]' : 'bg-[#7000FF]'
+          }`}
           style={{ animationDuration: '12s' }}
         />
       </div>
@@ -241,6 +300,8 @@ export default function App() {
         autoRotate={autoRotate}
         onSelectGame={handleSelectGame}
         onHoverGame={handleHoverGame}
+        isVipUnlocked={isVipUnlocked}
+        focusedGame={focusedGame}
       />
 
       {/* Top HUD: Search, Categories, Layout Modes, Random Launcher & DeltaMath Disguise */}
@@ -261,6 +322,9 @@ export default function App() {
         onCloakToDeltaMath={handleCloakToDeltaMath}
         totalGames={games.length}
         favCount={favorites.length}
+        isVipUnlocked={isVipUnlocked}
+        onOpenVipModal={() => setIsVipModalOpen(true)}
+        onOpenCatalog={() => setIsCatalogOpen(true)}
       />
 
       {/* Bottom Hologram HUD / Tooltip */}
@@ -269,30 +333,64 @@ export default function App() {
         onSelectGame={handleSelectGame}
         isFavorite={hoveredGame ? favorites.includes(hoveredGame.id) : false}
         onToggleFavorite={handleToggleFavorite}
+        isVipUnlocked={isVipUnlocked}
       />
 
       {/* Unlock Toast Notification */}
       {showUnlockToast && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-400/50 backdrop-blur-xl text-emerald-300 text-xs font-mono font-bold shadow-[0_0_30px_rgba(52,211,153,0.3)] animate-in fade-in slide-in-from-top-3 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span>ACCESS GRANTED • PRESS ESC OR CLICK Δ DELTAMATH TO RETURN TO CLASS</span>
+        <div
+          className={`absolute top-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full border backdrop-blur-xl text-xs font-mono font-bold shadow-2xl animate-in fade-in slide-in-from-top-3 flex items-center gap-2 ${
+            isVipUnlocked
+              ? 'bg-amber-500/20 border-amber-400/60 text-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.4)]'
+              : 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 shadow-[0_0_30px_rgba(52,211,153,0.3)]'
+          }`}
+        >
+          {isVipUnlocked ? (
+            <Crown className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          )}
+          <span>
+            {unlockToastMessage ||
+              'ACCESS GRANTED • PRESS ESC OR CLICK Δ DELTAMATH TO RETURN TO CLASS'}
+          </span>
         </div>
       )}
 
       {/* Frosted Glass Telemetry Status Footer */}
       <footer className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none hidden sm:flex items-center justify-between px-4 py-1.5 border-t border-white/10 bg-black/40 backdrop-blur-md text-[10px] font-mono tracking-wider text-white/50">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#00FFCC] animate-pulse" />
-          <span className="text-white/80 font-bold tracking-widest">SECURE_TUNNEL_ENABLED</span>
+          <span
+            className={`w-2 h-2 rounded-full animate-pulse ${
+              isVipUnlocked ? 'bg-amber-400' : 'bg-[#00FFCC]'
+            }`}
+          />
+          <span className="text-white/80 font-bold tracking-widest">
+            {isVipUnlocked ? 'VIP_SECURE_TUNNEL_ENABLED' : 'SECURE_TUNNEL_ENABLED'}
+          </span>
           <span className="text-white/20">•</span>
-          <span className="text-[#00FFCC]">0.02ms LATENCY</span>
+          <span className={isVipUnlocked ? 'text-amber-400' : 'text-[#00FFCC]'}>
+            0.02ms LATENCY
+          </span>
           <span className="text-white/20">•</span>
-          <span className="text-emerald-400">STATUS: ONLINE</span>
+          <span className={isVipUnlocked ? 'text-amber-300 font-bold' : 'text-emerald-400'}>
+            {isVipUnlocked ? 'STATUS: VIP 24K GOLD' : 'STATUS: ONLINE'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <span>SYSTEM: <strong className="text-white">UNBLOCKED_V4</strong></span>
+          <span>
+            SYSTEM:{' '}
+            <strong className={isVipUnlocked ? 'text-amber-300' : 'text-white'}>
+              {isVipUnlocked ? 'VIP_EXECUTIVE_EDITION' : 'UNBLOCKED_V4'}
+            </strong>
+          </span>
           <span className="text-white/20">•</span>
-          <span>READY: <strong className="text-[#00FFCC]">{games.length} CARTRIDGES</strong></span>
+          <span>
+            READY:{' '}
+            <strong className={isVipUnlocked ? 'text-amber-400' : 'text-[#00FFCC]'}>
+              {games.length} CARTRIDGES
+            </strong>
+          </span>
         </div>
       </footer>
 
@@ -305,6 +403,28 @@ export default function App() {
           onToggleFavorite={handleToggleFavorite}
         />
       )}
+
+      {/* Visual Game Browser Drawer (Matching Thumbnails & Quick Play) */}
+      <GameBrowserDrawer
+        isOpen={isCatalogOpen}
+        onClose={() => setIsCatalogOpen(false)}
+        games={games}
+        favorites={favorites}
+        onSelectGame={(game) => {
+          handleFocusGameInScene(game);
+          handleSelectGame(game);
+        }}
+        onFocusGameInScene={handleFocusGameInScene}
+        isVipUnlocked={isVipUnlocked}
+        onOpenVipModal={() => setIsVipModalOpen(true)}
+      />
+
+      {/* Dedicated VIP Section Passcode Modal (Code: 0711) */}
+      <VipPasscodeModal
+        isOpen={isVipModalOpen}
+        onClose={() => setIsVipModalOpen(false)}
+        onSuccess={handleVipPasscodeSuccess}
+      />
 
       {/* Modal: Add Custom Game to 3D Library */}
       <AddGameModal

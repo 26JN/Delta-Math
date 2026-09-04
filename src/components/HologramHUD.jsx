@@ -1,28 +1,37 @@
 import React from 'react';
-import { Star, Play, Sparkles, Gamepad2, MousePointer2, Compass } from 'lucide-react';
+import { Star, Play, Sparkles, Gamepad2, MousePointer2, Compass, Crown } from 'lucide-react';
 import { soundFX } from '../utils/audio.js';
+import { GameThumbnail } from '../utils/gameThumbnails.jsx';
 
 export const HologramHUD = ({
   hoveredGame,
   onSelectGame,
   isFavorite,
   onToggleFavorite,
+  isVipUnlocked = false,
 }) => {
   return (
     <div className="absolute bottom-8 left-4 right-4 z-20 pointer-events-none flex flex-col items-center">
       {hoveredGame ? (
-        <div className="pointer-events-auto w-full max-w-xl bg-white/5 backdrop-blur-2xl border border-[#00FFCC]/40 rounded-2xl p-4 shadow-[0_0_50px_rgba(0,255,204,0.2)] animate-in slide-in-from-bottom-3 duration-150">
+        <div className={`pointer-events-auto w-full max-w-xl bg-white/5 backdrop-blur-2xl rounded-2xl p-4 animate-in slide-in-from-bottom-3 duration-150 ${
+          hoveredGame.vip || isVipUnlocked
+            ? 'border border-amber-400/50 shadow-[0_0_50px_rgba(245,158,11,0.25)]'
+            : 'border border-[#00FFCC]/40 shadow-[0_0_50px_rgba(0,255,204,0.2)]'
+        }`}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              {/* Glowing category avatar badge */}
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg font-['Chakra_Petch'] text-black shadow-lg shrink-0 border border-white/20"
-                style={{
-                  backgroundColor: hoveredGame.color || '#00ffcc',
-                  boxShadow: `0 0 20px ${hoveredGame.color || '#00ffcc'}80`,
-                }}
-              >
-                {hoveredGame.title.slice(0, 2).toUpperCase()}
+              {/* Recognizable Game Thumbnail Art */}
+              <div className="relative w-14 h-14 rounded-xl overflow-hidden shadow-lg shrink-0 border border-white/20 bg-black/40">
+                <GameThumbnail
+                  game={hoveredGame}
+                  isVip={isVipUnlocked || hoveredGame.vip}
+                  className="w-full h-full object-cover"
+                />
+                {hoveredGame.vip && (
+                  <span className="absolute top-0.5 left-0.5 px-1 py-0.2 rounded text-[7px] font-black font-mono bg-amber-400 text-black shadow-xs flex items-center gap-0.5">
+                    <Crown className="w-2 h-2" /> VIP
+                  </span>
+                )}
               </div>
 
               <div>
@@ -80,10 +89,14 @@ export const HologramHUD = ({
                 soundFX.playSelect();
                 onSelectGame(hoveredGame);
               }}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#00FFCC] hover:bg-white text-black font-extrabold text-xs tracking-wider transition-all shadow-[0_0_20px_#00FFCC] hover:shadow-[0_0_25px_#ffffff] cursor-pointer"
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-black font-extrabold text-xs tracking-wider transition-all cursor-pointer ${
+                hoveredGame.vip || isVipUnlocked
+                  ? 'bg-amber-400 hover:bg-white shadow-[0_0_20px_rgba(251,191,36,0.6)] hover:shadow-[0_0_25px_#ffffff]'
+                  : 'bg-[#00FFCC] hover:bg-white shadow-[0_0_20px_#00FFCC] hover:shadow-[0_0_25px_#ffffff]'
+              }`}
             >
               <Play className="w-4 h-4 fill-black" />
-              <span>PLAY FULLSCREEN</span>
+              <span>{hoveredGame.vip || isVipUnlocked ? 'PLAY VIP FULLSCREEN' : 'PLAY FULLSCREEN'}</span>
             </button>
           </div>
         </div>

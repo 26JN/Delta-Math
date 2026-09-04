@@ -56,6 +56,14 @@ export const GameOverlay = ({
 
   if (!game) return null;
 
+  const getHostname = (url) => {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return 'unblocked mirror';
+    }
+  };
+
   const handleReload = () => {
     setIsLoading(true);
     setIframeKey((prev) => prev + 1);

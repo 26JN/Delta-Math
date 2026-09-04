@@ -13,6 +13,8 @@ import {
   Sparkles,
   Gamepad2,
   Star,
+  Crown,
+  LayoutGrid,
 } from 'lucide-react';
 import { soundFX } from '../utils/audio.js';
 
@@ -33,6 +35,9 @@ export const TopNav = ({
   onCloakToDeltaMath,
   totalGames,
   favCount,
+  isVipUnlocked = false,
+  onOpenVipModal,
+  onOpenCatalog,
 }) => {
   return (
     <header className="absolute top-0 left-0 right-0 z-30 pointer-events-none p-3 sm:p-4 flex flex-col gap-3">
@@ -92,6 +97,42 @@ export const TopNav = ({
 
         {/* Right: Quick Action Controls */}
         <div className="pointer-events-auto flex items-center gap-1.5 bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+          {/* Catalog Drawer Launcher */}
+          <button
+            id="open-catalog-btn"
+            onClick={() => {
+              soundFX.playSelect();
+              if (onOpenCatalog) onOpenCatalog();
+            }}
+            title="Browse all game thumbnails directly in explorer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white hover:text-[#00FFCC] border border-white/15 text-xs font-bold transition shadow-sm cursor-pointer"
+          >
+            <LayoutGrid className="w-4 h-4 text-[#00FFCC]" />
+            <span className="hidden sm:inline">Catalog</span>
+          </button>
+
+          {/* VIP Section Passkey Button */}
+          <button
+            id="vip-vault-btn"
+            onClick={() => {
+              soundFX.playSelect();
+              if (onOpenVipModal) onOpenVipModal();
+            }}
+            title={
+              isVipUnlocked
+                ? 'VIP Executive Vault Active (220+ Games Unlocked)'
+                : 'Unlock VIP Executive Vault (Enter Passkey)'
+            }
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-['Chakra_Petch'] transition cursor-pointer ${
+              isVipUnlocked
+                ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-black shadow-[0_0_20px_rgba(245,158,11,0.6)] border border-amber-300 animate-pulse'
+                : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-400/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+            }`}
+          >
+            <Crown className={`w-4 h-4 ${isVipUnlocked ? 'fill-black text-black' : 'text-amber-400'}`} />
+            <span>{isVipUnlocked ? 'VIP ACTIVE' : 'VIP VAULT'}</span>
+          </button>
+
           {/* Random Game */}
           <button
             id="random-game-btn"

@@ -1,113 +1,98 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { soundFX } from '../utils/audio.js';
+import { drawGameCoverArt } from '../utils/gameThumbnails.jsx';
 
-// Generate high-resolution canvas texture for the 3D cartridge front
-function createGameTexture(game) {
+// Generate high-resolution canvas texture for the 3D cartridge front with custom game artwork
+function createGameTexture(game, isVip = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
   if (ctx) {
+    const isGold = isVip || game.vip;
+    const primaryColor = isGold ? '#fbbf24' : (game.color || '#00ffcc');
+    const accentColor = isGold ? '#f59e0b' : (game.accent || '#3b82f6');
+
     // Deep frosted obsidian gradient background
     const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
-    bgGrad.addColorStop(0, '#111111');
-    bgGrad.addColorStop(0.5, '#080808');
-    bgGrad.addColorStop(1, '#020202');
+    if (isGold) {
+      bgGrad.addColorStop(0, '#1a1304');
+      bgGrad.addColorStop(0.5, '#0b0802');
+      bgGrad.addColorStop(1, '#030200');
+    } else {
+      bgGrad.addColorStop(0, '#0f141f');
+      bgGrad.addColorStop(0.5, '#080a10');
+      bgGrad.addColorStop(1, '#020305');
+    }
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, 512, 512);
 
-    // Glowing cyber neon border
+    // Glowing cyber neon border (Gold if VIP)
     ctx.lineWidth = 14;
-    ctx.strokeStyle = game.color || '#00ffcc';
+    ctx.strokeStyle = primaryColor;
     ctx.strokeRect(10, 10, 492, 492);
 
     // Inner thin border
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.strokeStyle = isGold ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.3)';
     ctx.strokeRect(26, 26, 460, 460);
 
     // Header badge (Category)
-    ctx.fillStyle = game.color || '#00ffcc';
+    ctx.fillStyle = primaryColor;
     ctx.beginPath();
-    ctx.roundRect(36, 42, 160, 36, 6);
+    ctx.roundRect(36, 38, 170, 36, 6);
     ctx.fill();
 
     ctx.fillStyle = '#05070c';
-    ctx.font = 'bold 20px "Chakra Petch", sans-serif';
-    ctx.fillText(game.category.toUpperCase(), 50, 67);
+    ctx.font = 'bold 19px "Chakra Petch", sans-serif';
+    ctx.fillText(game.category.toUpperCase(), 48, 63);
 
-    // Star rating badge
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    // Star rating badge / VIP Crown
+    ctx.fillStyle = isGold ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255, 255, 255, 0.15)';
     ctx.beginPath();
-    ctx.roundRect(330, 42, 146, 36, 6);
+    ctx.roundRect(310, 38, 166, 36, 6);
     ctx.fill();
 
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillText(`★ ${game.rating}`, 348, 67);
+    ctx.fillStyle = isGold ? '#fef08a' : '#fbbf24';
+    ctx.font = 'bold 18px "Chakra Petch", sans-serif';
+    ctx.fillText(isGold ? `★ ${game.rating} VIP` : `★ ${game.rating}`, 324, 63);
 
-    // Decorative cyber grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.lineWidth = 1;
-    for (let y = 100; y < 360; y += 30) {
-      ctx.beginPath();
-      ctx.moveTo(36, y);
-      ctx.lineTo(476, y);
-      ctx.stroke();
-    }
+    // Custom Iconic Game Artwork / Matching Thumbnail
+    drawGameCoverArt(ctx, game, 36, 86, 440, 234, isGold);
 
-    // Glowing game icon / emblem circle
-    const centerGrad = ctx.createRadialGradient(256, 210, 10, 256, 210, 90);
-    centerGrad.addColorStop(0, (game.color || '#00ffcc') + '66');
-    centerGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = centerGrad;
-    ctx.beginPath();
-    ctx.arc(256, 210, 90, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Stylized emblem in center
+    // Game Title text below thumbnail
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 72px "Chakra Petch", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const initials = game.title
-      .split(' ')
-      .map((w) => w[0])
-      .slice(0, 2)
-      .join('');
-    ctx.fillText(initials || '▶', 256, 210);
-
-    // Game Title text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 36px "Chakra Petch", sans-serif';
+    ctx.font = 'bold 34px "Chakra Petch", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
 
-    // Handle title wrapping
+    // Smart title wrapping
     const words = game.title.split(' ');
-    if (words.length > 2) {
-      ctx.fillText(words.slice(0, 2).join(' '), 256, 340);
-      ctx.font = 'bold 28px "Chakra Petch", sans-serif';
-      ctx.fillText(words.slice(2).join(' '), 256, 375);
+    if (words.length > 3) {
+      ctx.fillText(words.slice(0, 2).join(' '), 256, 360);
+      ctx.font = 'bold 26px "Chakra Petch", sans-serif';
+      ctx.fillText(words.slice(2).join(' '), 256, 396);
+    } else if (words.length > 1) {
+      ctx.fillText(game.title, 256, 372);
     } else {
-      ctx.fillText(game.title, 256, 350);
+      ctx.fillText(game.title, 256, 372);
     }
 
     // "CLICK TO PLAY" Cyber pill button
-    const btnGrad = ctx.createLinearGradient(120, 420, 392, 470);
-    btnGrad.addColorStop(0, game.color || '#00ffcc');
-    btnGrad.addColorStop(1, game.accent || '#3b82f6');
+    const btnGrad = ctx.createLinearGradient(106, 426, 406, 480);
+    btnGrad.addColorStop(0, primaryColor);
+    btnGrad.addColorStop(1, accentColor);
     ctx.fillStyle = btnGrad;
     ctx.beginPath();
-    ctx.roundRect(106, 420, 300, 52, 10);
+    ctx.roundRect(106, 426, 300, 52, 10);
     ctx.fill();
 
     ctx.fillStyle = '#05070c';
-    ctx.font = 'bold 22px "Chakra Petch", sans-serif';
+    ctx.font = 'bold 21px "Chakra Petch", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('⚡ PLAY GAME', 256, 453);
+    ctx.fillText(isGold ? '👑 PLAY VIP' : '⚡ PLAY GAME', 256, 459);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -123,6 +108,8 @@ export const ThreeGameScene = ({
   autoRotate,
   onSelectGame,
   onHoverGame,
+  isVipUnlocked = false,
+  focusedGame = null,
 }) => {
   const mountRef = useRef(null);
   const hoveredGameRef = useRef(null);
@@ -144,6 +131,13 @@ export const ThreeGameScene = ({
   const rendererRef = useRef(null);
   const gameMeshesRef = useRef([]);
 
+  // Theme elements refs
+  const dirLight1Ref = useRef(null);
+  const centerPointLightRef = useRef(null);
+  const gridHelperRef = useRef(null);
+  const floorRingRef = useRef(null);
+  const particlesRef = useRef(null);
+
   // Drag / Orbit state
   const isDraggingRef = useRef(false);
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
@@ -151,6 +145,24 @@ export const ThreeGameScene = ({
   const targetCameraAngleRef = useRef({ theta: 0, phi: 0.25, radius: 24 });
   const mouseScreenRef = useRef(new THREE.Vector2(-9999, -9999));
   const raycasterRef = useRef(new THREE.Raycaster());
+
+  // Fly to focused game when selected from catalog drawer
+  useEffect(() => {
+    if (!focusedGame) return;
+    const found = gameMeshesRef.current.find((item) => item.game.id === focusedGame.id);
+    if (found) {
+      const pos = found.targetPosition;
+      const angle = Math.atan2(pos.x, pos.z);
+      targetCameraAngleRef.current.theta = angle;
+      targetCameraAngleRef.current.phi = Math.max(0.05, Math.min(0.4, (pos.y / 20) * 0.3));
+      const dist = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
+      targetCameraAngleRef.current.radius = Math.max(16, dist + 6);
+      hoveredGameRef.current = found.game;
+      if (onHoverGameRef.current) {
+        onHoverGameRef.current(found.game);
+      }
+    }
+  }, [focusedGame]);
 
   // Setup Three.js scene ONCE on mount
   useEffect(() => {
@@ -192,6 +204,7 @@ export const ThreeGameScene = ({
     const dirLight1 = new THREE.DirectionalLight(0x00ffcc, 1.4);
     dirLight1.position.set(15, 20, 15);
     scene.add(dirLight1);
+    dirLight1Ref.current = dirLight1;
 
     const dirLight2 = new THREE.DirectionalLight(0x7000ff, 1.1);
     dirLight2.position.set(-15, 10, -10);
@@ -200,6 +213,7 @@ export const ThreeGameScene = ({
     const centerPointLight = new THREE.PointLight(0x00ffcc, 2.2, 45);
     centerPointLight.position.set(0, 3, 0);
     scene.add(centerPointLight);
+    centerPointLightRef.current = centerPointLight;
 
     // 5. Starfield / Frosted Cyber Particles
     const particleCount = 700;
@@ -231,11 +245,13 @@ export const ThreeGameScene = ({
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
+    particlesRef.current = particles;
 
-    // 6. Holographic Ground Grid
-    const gridHelper = new THREE.GridHelper(60, 40, 0x00ffcc, 0x27272a);
+    // 6. Holographic Ground Grid (Expanded for massive 200+ game library)
+    const gridHelper = new THREE.GridHelper(120, 60, 0x00ffcc, 0x27272a);
     gridHelper.position.y = -4.5;
     scene.add(gridHelper);
+    gridHelperRef.current = gridHelper;
 
     // Glowing center pedestal ring
     const ringGeo = new THREE.RingGeometry(8, 8.4, 64);
@@ -249,6 +265,7 @@ export const ThreeGameScene = ({
     floorRing.rotation.x = Math.PI / 2;
     floorRing.position.y = -4.48;
     scene.add(floorRing);
+    floorRingRef.current = floorRing;
 
     // 7. Mouse and Resize event listeners
     const handleResize = () => {
@@ -293,8 +310,8 @@ export const ThreeGameScene = ({
     const handleWheel = (e) => {
       e.preventDefault();
       targetCameraAngleRef.current.radius = Math.max(
-        12,
-        Math.min(38, targetCameraAngleRef.current.radius + e.deltaY * 0.02)
+        8,
+        Math.min(75, targetCameraAngleRef.current.radius + e.deltaY * 0.025)
       );
     };
 
@@ -492,30 +509,64 @@ export const ThreeGameScene = ({
     games.forEach((game, index) => {
       const group = new THREE.Group();
 
-      // Determine 3D Layout Target Position
+      // Determine 3D Layout Target Position (GUARANTEED NO COLLISION)
       const targetPos = new THREE.Vector3();
-      const radius = 10;
 
       if (layoutMode === 'ring') {
-        const angle = (index / total) * Math.PI * 2;
-        targetPos.x = Math.sin(angle) * radius;
-        targetPos.z = Math.cos(angle) * radius;
-        targetPos.y = 0;
+        // Tiered amphitheater coliseum for 200+ games:
+        // Each tier has a carefully calibrated circumference and capacity so adjacent cartridges
+        // have >= 5.5 units of distance (cartridge width is 2.6, so >= 2.9 units of open space).
+        const tierCapacities = [14, 20, 26, 32, 38, 44, 50];
+        const tierRadii = [12.5, 18.0, 23.5, 29.0, 34.5, 40.0, 46.0];
+
+        let accumulated = 0;
+        let tier = 0;
+        let indexInTier = 0;
+        let itemsInThisTier = 14;
+
+        for (let t = 0; t < tierCapacities.length; t++) {
+          const cap = tierCapacities[t];
+          const remaining = total - accumulated;
+          const countForThisTier = (t === tierCapacities.length - 1) ? Math.max(1, remaining) : Math.min(cap, Math.max(1, remaining));
+
+          if (index < accumulated + countForThisTier || t === tierCapacities.length - 1) {
+            tier = t;
+            indexInTier = index - accumulated;
+            itemsInThisTier = countForThisTier;
+            break;
+          }
+          accumulated += countForThisTier;
+        }
+
+        const tierRadius = tierRadii[tier] || (46 + (tier - 6) * 5.5);
+        const tierY = tier * 3.8; // Cartridge height is 3.2, so 3.8 gives clean 0.6 gap between tiers
+        const tierAngleOffset = tier * 0.32; // Staggered angle between tiers for optimal visual line of sight
+        const angle = (indexInTier / itemsInThisTier) * Math.PI * 2 + tierAngleOffset;
+
+        targetPos.x = Math.sin(angle) * tierRadius;
+        targetPos.z = Math.cos(angle) * tierRadius;
+        targetPos.y = tierY;
       } else if (layoutMode === 'grid') {
-        const cols = 4;
+        // Sweeping curved IMAX command wall with guaranteed 5.4 spacing
+        const cols = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(total * 1.1))));
         const col = index % cols;
         const row = Math.floor(index / cols);
-        const spacingX = 4.8;
-        const spacingY = 4.8;
-        targetPos.x = (col - (cols - 1) / 2) * spacingX;
-        targetPos.y = (1.5 - row) * spacingY;
-        targetPos.z = 0;
+        const totalRows = Math.ceil(total / cols);
+        const spacingX = 5.2;
+        const spacingY = 4.6;
+
+        const curvedRadius = 32 + (totalRows > 12 ? 8 : 0);
+        const angle = (col - (cols - 1) / 2) * (spacingX / curvedRadius);
+
+        targetPos.x = Math.sin(angle) * curvedRadius;
+        targetPos.z = Math.cos(angle) * curvedRadius - curvedRadius;
+        targetPos.y = (totalRows / 2 - row) * spacingY;
       } else if (layoutMode === 'helix') {
-        const angle = index * 0.75;
-        const helixRadius = 8.5;
+        const angle = index * 0.36;
+        const helixRadius = 16.5;
         targetPos.x = Math.sin(angle) * helixRadius;
         targetPos.z = Math.cos(angle) * helixRadius;
-        targetPos.y = (index - total / 2) * 1.5;
+        targetPos.y = (index - total / 2) * 0.95;
       }
 
       // Initial position for smooth entry transition
@@ -524,27 +575,29 @@ export const ThreeGameScene = ({
       // Cartridge Box Geometry: Width=2.6, Height=3.2, Depth=0.5
       const geometry = new THREE.BoxGeometry(2.6, 3.2, 0.5);
 
-      // Generate front texture
-      const frontTexture = createGameTexture(game);
+      // Generate front texture with custom game artwork and VIP styling
+      const frontTexture = createGameTexture(game, isVipUnlocked);
 
       // Multi-material for 6 faces: Right, Left, Top, Bottom, Front, Back
-      const sideColor = new THREE.Color(game.color || '#00ffcc').multiplyScalar(0.3);
+      const isGold = isVipUnlocked || game.vip;
+      const edgeBaseColor = isGold ? '#f59e0b' : (game.color || '#00ffcc');
+      const sideColor = new THREE.Color(edgeBaseColor).multiplyScalar(isGold ? 0.6 : 0.3);
       const edgeMaterial = new THREE.MeshStandardMaterial({
         color: sideColor,
-        roughness: 0.3,
-        metalness: 0.8,
+        roughness: isGold ? 0.2 : 0.3,
+        metalness: isGold ? 0.9 : 0.8,
       });
 
       const frontMaterial = new THREE.MeshStandardMaterial({
         map: frontTexture,
-        roughness: 0.2,
-        metalness: 0.4,
-        emissive: new THREE.Color(game.color || '#00ffcc'),
-        emissiveIntensity: 0.15,
+        roughness: isGold ? 0.15 : 0.2,
+        metalness: isGold ? 0.6 : 0.4,
+        emissive: new THREE.Color(edgeBaseColor),
+        emissiveIntensity: isGold ? 0.25 : 0.15,
       });
 
       const backMaterial = new THREE.MeshStandardMaterial({
-        color: 0x090d16,
+        color: isGold ? 0x140d02 : 0x090d16,
         roughness: 0.5,
         metalness: 0.8,
       });
@@ -587,7 +640,40 @@ export const ThreeGameScene = ({
         originalY: targetPos.y,
       });
     });
-  }, [sceneReady, games, layoutMode]);
+  }, [sceneReady, games, layoutMode, isVipUnlocked]);
+
+  // Update scene atmosphere when VIP mode is toggled
+  useEffect(() => {
+    if (!sceneReady) return;
+    const isGold = isVipUnlocked;
+
+    if (dirLight1Ref.current) {
+      dirLight1Ref.current.color.setHex(isGold ? 0xfbbf24 : 0x00ffcc);
+      dirLight1Ref.current.intensity = isGold ? 1.8 : 1.4;
+    }
+    if (centerPointLightRef.current) {
+      centerPointLightRef.current.color.setHex(isGold ? 0xf59e0b : 0x00ffcc);
+    }
+    if (floorRingRef.current && floorRingRef.current.material) {
+      floorRingRef.current.material.color.setHex(isGold ? 0xfbbf24 : 0x00ffcc);
+      floorRingRef.current.material.opacity = isGold ? 0.8 : 0.5;
+    }
+    if (particlesRef.current && particlesRef.current.geometry) {
+      const colors = particlesRef.current.geometry.attributes.color.array;
+      const count = colors.length / 3;
+      for (let i = 0; i < count; i++) {
+        const c = new THREE.Color(
+          isGold
+            ? (i % 3 === 0 ? 0xfbbf24 : i % 3 === 1 ? 0xf59e0b : 0xffffff)
+            : (i % 3 === 0 ? 0x00ffcc : i % 3 === 1 ? 0x7000ff : 0xffffff)
+        );
+        colors[i * 3] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+      particlesRef.current.geometry.attributes.color.needsUpdate = true;
+    }
+  }, [isVipUnlocked, sceneReady]);
 
   // Handle Filtering (dim/scale non-matching games)
   useEffect(() => {

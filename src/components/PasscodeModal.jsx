@@ -55,11 +55,17 @@ export const PasscodeModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const verifyCode = (code) => {
-    if (code === '1234') {
+    if (code === '0711') {
+      setIsSuccess(true);
+      soundFX.playVipFanfare();
+      setTimeout(() => {
+        onSuccess(true); // VIP mode unlocked!
+      }, 700);
+    } else if (code === '1234') {
       setIsSuccess(true);
       soundFX.playUnlockChime();
       setTimeout(() => {
-        onSuccess();
+        onSuccess(false);
       }, 600);
     } else {
       setIsError(true);
@@ -216,11 +222,11 @@ export const PasscodeModal = ({ isOpen, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* Discreet bottom hint */}
+        {/* Discreet security footer */}
         <div className="mt-5 text-center">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono text-white/40 bg-white/5 border border-white/10">
             <KeyRound className="w-3 h-3 text-[#00ffcc]" />
-            <span>Passcode: 1234</span>
+            <span>DeltaMath Classroom Security Active</span>
           </span>
         </div>
       </div>

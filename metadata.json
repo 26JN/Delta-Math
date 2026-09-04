@@ -1,0 +1,6 @@
+{
+  "name": "3D Unblocked Games Hub",
+  "description": "A top-tier 3D interactive portal for unblocked web games featuring 3D holographic cartridges, dynamic lighting, search and category filtering, and fullscreen iframe gameplay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

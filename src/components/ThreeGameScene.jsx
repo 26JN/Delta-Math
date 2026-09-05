@@ -3,98 +3,219 @@ import * as THREE from 'three';
 import { soundFX } from '../utils/audio.js';
 import { drawGameCoverArt } from '../utils/gameThumbnails.jsx';
 
-// Generate high-resolution canvas texture for the 3D cartridge front with custom game artwork
-function createGameTexture(game, isVip = false) {
+// Generate 4K ultra-sharp canvas texture (1280x1280) for the 3D cartridge front
+function createGameTexture(game, isVip = false, renderer = null) {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 1280;
+  canvas.height = 1280;
   const ctx = canvas.getContext('2d');
 
   if (ctx) {
-    const isGold = isVip || game.vip;
-    const primaryColor = isGold ? '#fbbf24' : (game.color || '#00ffcc');
-    const accentColor = isGold ? '#f59e0b' : (game.accent || '#3b82f6');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-    // Deep frosted obsidian gradient background
-    const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
+    const isGold = isVip || game.vip;
+    const primaryColor = isGold ? '#e5c158' : (game.color || '#2997ff');
+    const accentColor = isGold ? '#d4af37' : (game.accent || '#0071e3');
+
+    // Deep Space Black & Obsidian brushed texture with radial studio gradient
+    const bgGrad = ctx.createRadialGradient(640, 640, 150, 640, 640, 920);
     if (isGold) {
-      bgGrad.addColorStop(0, '#1a1304');
-      bgGrad.addColorStop(0.5, '#0b0802');
-      bgGrad.addColorStop(1, '#030200');
+      bgGrad.addColorStop(0, '#1c160b');
+      bgGrad.addColorStop(0.5, '#0d0a04');
+      bgGrad.addColorStop(1, '#030201');
     } else {
-      bgGrad.addColorStop(0, '#0f141f');
-      bgGrad.addColorStop(0.5, '#080a10');
-      bgGrad.addColorStop(1, '#020305');
+      bgGrad.addColorStop(0, '#0f1422');
+      bgGrad.addColorStop(0.5, '#070911');
+      bgGrad.addColorStop(1, '#020306');
     }
     ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, 512, 512);
+    ctx.fillRect(0, 0, 1280, 1280);
 
-    // Glowing cyber neon border (Gold if VIP)
-    ctx.lineWidth = 14;
+    // Apple-style Precision Hairline Outer Titanium Border
+    ctx.lineWidth = 16;
     ctx.strokeStyle = primaryColor;
-    ctx.strokeRect(10, 10, 492, 492);
+    ctx.beginPath();
+    ctx.roundRect(20, 20, 1240, 1240, 36);
+    ctx.stroke();
 
-    // Inner thin border
+    // Inner laser guide line (0.5px Apple hairline aesthetic)
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = isGold ? 'rgba(229, 193, 88, 0.45)' : 'rgba(255, 255, 255, 0.2)';
+    ctx.beginPath();
+    ctx.roundRect(46, 46, 1188, 1188, 24);
+    ctx.stroke();
+
+    // Micro Specification Laser Header (Apple Industrial Design)
+    ctx.fillStyle = isGold ? 'rgba(229, 193, 88, 0.85)' : 'rgba(245, 245, 247, 0.55)';
+    ctx.font = '600 18px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('SPATIAL ARCHIVE // 4K RETINA ENGINE', 64, 82);
+
+    ctx.textAlign = 'right';
+    ctx.fillText(isGold ? '24K EXECUTIVE VAULT' : 'VERIFIED PROXY CORE', 1216, 82);
+
+    // Category Badge (Apple Frosted Glass Capsule)
+    const catGrad = ctx.createLinearGradient(64, 110, 380, 110);
+    catGrad.addColorStop(0, isGold ? 'rgba(229, 193, 88, 0.2)' : 'rgba(41, 151, 255, 0.2)');
+    catGrad.addColorStop(1, isGold ? 'rgba(212, 175, 55, 0.08)' : 'rgba(0, 113, 227, 0.08)');
+    ctx.fillStyle = catGrad;
+    ctx.beginPath();
+    ctx.roundRect(64, 110, 320, 68, 18);
+    ctx.fill();
+
     ctx.lineWidth = 2;
-    ctx.strokeStyle = isGold ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 0.3)';
-    ctx.strokeRect(26, 26, 460, 460);
+    ctx.strokeStyle = isGold ? 'rgba(229, 193, 88, 0.5)' : 'rgba(41, 151, 255, 0.5)';
+    ctx.stroke();
 
-    // Header badge (Category)
-    ctx.fillStyle = primaryColor;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText((game.category || 'ACTION').toUpperCase(), 224, 152);
+
+    // Star Rating & Plays Capsule
+    ctx.fillStyle = isGold ? 'rgba(229, 193, 88, 0.15)' : 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = isGold ? 'rgba(229, 193, 88, 0.35)' : 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(36, 38, 170, 36, 6);
+    ctx.roundRect(860, 110, 356, 68, 18);
     ctx.fill();
-
-    ctx.fillStyle = '#05070c';
-    ctx.font = 'bold 19px "Chakra Petch", sans-serif';
-    ctx.fillText(game.category.toUpperCase(), 48, 63);
-
-    // Star rating badge / VIP Crown
-    ctx.fillStyle = isGold ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255, 255, 255, 0.15)';
-    ctx.beginPath();
-    ctx.roundRect(310, 38, 166, 36, 6);
-    ctx.fill();
+    ctx.stroke();
 
     ctx.fillStyle = isGold ? '#fef08a' : '#fbbf24';
-    ctx.font = 'bold 18px "Chakra Petch", sans-serif';
-    ctx.fillText(isGold ? `★ ${game.rating} VIP` : `★ ${game.rating}`, 324, 63);
-
-    // Custom Iconic Game Artwork / Matching Thumbnail
-    drawGameCoverArt(ctx, game, 36, 86, 440, 234, isGold);
-
-    // Game Title text below thumbnail
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 34px "Chakra Petch", sans-serif';
+    ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(
+      isGold
+        ? `★ ${game.rating}  •  24K VIP`
+        : `★ ${game.rating}  •  ${game.plays ? Math.floor(game.plays / 1000) + 'K PLAYS' : 'TOP RATED'}`,
+      1038,
+      152
+    );
 
-    // Smart title wrapping
-    const words = game.title.split(' ');
-    if (words.length > 3) {
-      ctx.fillText(words.slice(0, 2).join(' '), 256, 360);
-      ctx.font = 'bold 26px "Chakra Petch", sans-serif';
-      ctx.fillText(words.slice(2).join(' '), 256, 396);
-    } else if (words.length > 1) {
-      ctx.fillText(game.title, 256, 372);
-    } else {
-      ctx.fillText(game.title, 256, 372);
-    }
+    // Custom 4K Game Cover Artwork (1100 x 580 px)
+    drawGameCoverArt(ctx, game, 90, 206, 1100, 580, isGold);
 
-    // "CLICK TO PLAY" Cyber pill button
-    const btnGrad = ctx.createLinearGradient(106, 426, 406, 480);
-    btnGrad.addColorStop(0, primaryColor);
-    btnGrad.addColorStop(1, accentColor);
-    ctx.fillStyle = btnGrad;
+    // Hairline frame around cover art
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = isGold ? 'rgba(229, 193, 88, 0.4)' : 'rgba(255, 255, 255, 0.22)';
     ctx.beginPath();
-    ctx.roundRect(106, 426, 300, 52, 10);
+    ctx.roundRect(90, 206, 1100, 580, 20);
+    ctx.stroke();
+
+    // Holographic Security Foil Seal (Bottom-right corner of artwork)
+    const holoX = 1120;
+    const holoY = 720;
+    const holoGrad = ctx.createRadialGradient(holoX, holoY, 4, holoX, holoY, 42);
+    holoGrad.addColorStop(0, '#ffffff');
+    holoGrad.addColorStop(0.3, '#2997ff');
+    holoGrad.addColorStop(0.6, '#af52de');
+    holoGrad.addColorStop(0.85, '#e5c158');
+    holoGrad.addColorStop(1, '#30d158');
+    ctx.fillStyle = holoGrad;
+    ctx.beginPath();
+    ctx.arc(holoX, holoY, 36, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.beginPath();
+    ctx.arc(holoX, holoY, 30, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.fillStyle = '#05070c';
-    ctx.font = 'bold 21px "Chakra Petch", sans-serif';
+    ctx.font = '800 13px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(isGold ? '👑 PLAY VIP' : '⚡ PLAY GAME', 256, 459);
+    ctx.fillText('APPLE', holoX, holoY - 3);
+    ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+    ctx.fillText('4K PRO', holoX, holoY + 12);
+
+    // Game Title text with precision Apple typography
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 56px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif';
+    ctx.textAlign = 'center';
+
+    const words = (game.title || '').split(' ');
+    if (words.length > 3) {
+      ctx.fillText(words.slice(0, 2).join(' '), 640, 875);
+      ctx.font = '600 44px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif';
+      ctx.fillStyle = 'rgba(245, 245, 247, 0.85)';
+      ctx.fillText(words.slice(2).join(' '), 640, 935);
+    } else if (words.length > 1) {
+      ctx.fillText(game.title, 640, 900);
+    } else {
+      ctx.fillText(game.title, 640, 900);
+    }
+
+    // "PLAY" Apple-style Titanium Capsule Button
+    const btnGrad = ctx.createLinearGradient(340, 1020, 940, 1140);
+    if (isGold) {
+      btnGrad.addColorStop(0, '#fef08a');
+      btnGrad.addColorStop(0.5, '#e5c158');
+      btnGrad.addColorStop(1, '#ca8a04');
+    } else {
+      btnGrad.addColorStop(0, '#2997ff');
+      btnGrad.addColorStop(1, '#0071e3');
+    }
+    ctx.fillStyle = btnGrad;
+    ctx.beginPath();
+    ctx.roundRect(340, 1020, 600, 116, 32);
+    ctx.fill();
+
+    // Specular top highlight on button
+    const btnHighlight = ctx.createLinearGradient(340, 1020, 340, 1070);
+    btnHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+    btnHighlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = btnHighlight;
+    ctx.beginPath();
+    ctx.roundRect(344, 1022, 592, 52, 28);
+    ctx.fill();
+
+    ctx.fillStyle = isGold ? '#05070c' : '#ffffff';
+    ctx.font = '700 42px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(isGold ? '👑 PLAY 24K VIP' : '▶ PLAY NOW', 640, 1094);
+
+    // Laser serial code at bottom
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '500 18px -apple-system, BlinkMacSystemFont, "SF Pro Text", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      `MODEL: APL-${(game.id || 'GAME').toUpperCase().replace(/[^A-Z0-9]/g, '')} // SPATIAL-ARCADE-4K`,
+      640,
+      1200
+    );
   }
 
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  if (renderer && renderer.capabilities) {
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  } else {
+    texture.anisotropy = 16;
+  }
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Generate circular soft contact shadow texture
+function createContactShadowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
+    grad.addColorStop(0.35, 'rgba(0, 0, 0, 0.5)');
+    grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.15)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
@@ -115,7 +236,7 @@ export const ThreeGameScene = ({
   const hoveredGameRef = useRef(null);
   const [sceneReady, setSceneReady] = useState(false);
 
-  // Stable callback refs to avoid recreating the entire Three.js canvas on App state updates
+  // Stable callback refs
   const onHoverGameRef = useRef(onHoverGame);
   onHoverGameRef.current = onHoverGame;
 
@@ -125,7 +246,7 @@ export const ThreeGameScene = ({
   const autoRotateRef = useRef(autoRotate);
   autoRotateRef.current = autoRotate;
 
-  // Keep references to Three.js objects for smooth manipulation
+  // Scene references
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
@@ -133,18 +254,29 @@ export const ThreeGameScene = ({
 
   // Theme elements refs
   const dirLight1Ref = useRef(null);
+  const dirLight2Ref = useRef(null);
   const centerPointLightRef = useRef(null);
   const gridHelperRef = useRef(null);
   const floorRingRef = useRef(null);
   const particlesRef = useRef(null);
 
-  // Drag / Orbit state
+  // Drag & Orbit state
   const isDraggingRef = useRef(false);
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
   const cameraAngleRef = useRef({ theta: 0, phi: 0.25, radius: 24 });
   const targetCameraAngleRef = useRef({ theta: 0, phi: 0.25, radius: 24 });
   const mouseScreenRef = useRef(new THREE.Vector2(-9999, -9999));
+  const mouseNormalizedRef = useRef({ x: 0, y: 0 });
   const raycasterRef = useRef(new THREE.Raycaster());
+
+  // Cinematic Camera Fly-In Transition state (Apple product style)
+  const isTransitioningRef = useRef(false);
+  const transitionStartRef = useRef(0);
+  const transitionDurationRef = useRef(420); // ms
+  const transitionStartPosRef = useRef(new THREE.Vector3());
+  const transitionTargetPosRef = useRef(new THREE.Vector3());
+  const transitionTargetLookRef = useRef(new THREE.Vector3());
+  const transitionGameRef = useRef(null);
 
   // Fly to focused game when selected from catalog drawer
   useEffect(() => {
@@ -171,21 +303,21 @@ export const ThreeGameScene = ({
 
     // 1. Scene
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050505, 0.018);
+    scene.fog = new THREE.FogExp2(0x000000, 0.014);
     sceneRef.current = scene;
     setSceneReady(true);
 
-    // 2. Camera
+    // 2. Camera with cinematic focal length
     const camera = new THREE.PerspectiveCamera(
-      55,
+      50,
       container.clientWidth / container.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 7, 24);
+    camera.position.set(0, 6.5, 25);
     cameraRef.current = camera;
 
-    // 3. Renderer with transparency for background frosted glow
+    // 3. Renderer configured for Apple-grade Retina 4K sharpness
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
@@ -193,41 +325,47 @@ export const ThreeGameScene = ({
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x050505, 0.7);
+    renderer.setClearColor(0x000000, 0);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // 4. Frosted Glass Cyber Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    // 4. Studio Lighting Rig (Apple Key, Specular Rim, Ambient Fill)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x00ffcc, 1.4);
-    dirLight1.position.set(15, 20, 15);
+    // Studio Key Light (Warm titanium soft white)
+    const dirLight1 = new THREE.DirectionalLight(0xfffaed, 2.6);
+    dirLight1.position.set(20, 26, 18);
     scene.add(dirLight1);
     dirLight1Ref.current = dirLight1;
 
-    const dirLight2 = new THREE.DirectionalLight(0x7000ff, 1.1);
-    dirLight2.position.set(-15, 10, -10);
+    // Horizon Specular Rim Light (Cupertino electric blue / champagne gold)
+    const dirLight2 = new THREE.DirectionalLight(0x2997ff, 2.4);
+    dirLight2.position.set(-22, 14, -18);
     scene.add(dirLight2);
+    dirLight2Ref.current = dirLight2;
 
-    const centerPointLight = new THREE.PointLight(0x00ffcc, 2.2, 45);
-    centerPointLight.position.set(0, 3, 0);
+    // Center ambient pedestal glow
+    const centerPointLight = new THREE.PointLight(0x2997ff, 2.2, 60);
+    centerPointLight.position.set(0, 2, 0);
     scene.add(centerPointLight);
     centerPointLightRef.current = centerPointLight;
 
-    // 5. Starfield / Frosted Cyber Particles
+    // 5. Apple Spatial Micro-Particle Atmosphere
     const particleCount = 700;
     const particleGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
     for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 80;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 60;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 80;
+      positions[i * 3] = (Math.random() - 0.5) * 95;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 65;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 95;
 
       const c = new THREE.Color(
-        i % 3 === 0 ? 0x00ffcc : i % 3 === 1 ? 0x7000ff : 0xffffff
+        i % 4 === 0 ? 0x2997ff : i % 4 === 1 ? 0xf5f5f7 : i % 4 === 2 ? 0x86868b : 0xe5c158
       );
       colors[i * 3] = c.r;
       colors[i * 3 + 1] = c.g;
@@ -237,37 +375,62 @@ export const ThreeGameScene = ({
     particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const particleMat = new THREE.PointsMaterial({
-      size: 0.45,
+      size: 0.24,
       vertexColors: true,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.45,
       blending: THREE.AdditiveBlending,
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
     particlesRef.current = particles;
 
-    // 6. Holographic Ground Grid (Expanded for massive 200+ game library)
-    const gridHelper = new THREE.GridHelper(120, 60, 0x00ffcc, 0x27272a);
-    gridHelper.position.y = -4.5;
-    scene.add(gridHelper);
-    gridHelperRef.current = gridHelper;
+    // 6. Apple Studio Titanium Pedestal & Concentric Hairline Rings
+    const pedestalGroup = new THREE.Group();
+    const pedestalGeo = new THREE.CylinderGeometry(52, 54, 0.5, 64);
+    const pedestalMat = new THREE.MeshStandardMaterial({
+      color: 0x05070c,
+      roughness: 0.22,
+      metalness: 0.85,
+    });
+    const pedestalMesh = new THREE.Mesh(pedestalGeo, pedestalMat);
+    pedestalMesh.position.y = -4.75;
+    pedestalGroup.add(pedestalMesh);
 
-    // Glowing center pedestal ring
-    const ringGeo = new THREE.RingGeometry(8, 8.4, 64);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x00ffcc,
+    // Concentric etched titanium hairline rings
+    const ringRadii = [8, 14, 20, 26, 32, 38, 44, 50];
+    ringRadii.forEach((rad) => {
+      const ringGeo = new THREE.RingGeometry(rad, rad + 0.12, 96);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x2997ff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.25,
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = -4.48;
+      pedestalGroup.add(ring);
+    });
+
+    scene.add(pedestalGroup);
+    gridHelperRef.current = pedestalGroup;
+
+    // Center focal ring
+    const focalRingGeo = new THREE.RingGeometry(4.8, 5.05, 64);
+    const focalRingMat = new THREE.MeshBasicMaterial({
+      color: 0x2997ff,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.45,
     });
-    const floorRing = new THREE.Mesh(ringGeo, ringMat);
+    const floorRing = new THREE.Mesh(focalRingGeo, focalRingMat);
     floorRing.rotation.x = Math.PI / 2;
-    floorRing.position.y = -4.48;
+    floorRing.position.y = -4.47;
     scene.add(floorRing);
     floorRingRef.current = floorRing;
 
-    // 7. Mouse and Resize event listeners
+    // 7. Mouse and Resize Handlers
     const handleResize = () => {
       if (!container || !camera || !renderer) return;
       camera.aspect = container.clientWidth / container.clientHeight;
@@ -278,8 +441,8 @@ export const ThreeGameScene = ({
     const resizeObserver = new ResizeObserver(() => handleResize());
     resizeObserver.observe(container);
 
-    // Drag interaction handlers
     const handlePointerDown = (e) => {
+      if (isTransitioningRef.current) return;
       isDraggingRef.current = true;
       previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     };
@@ -289,14 +452,18 @@ export const ThreeGameScene = ({
       mouseScreenRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouseScreenRef.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-      if (isDraggingRef.current) {
+      // Normalized coordinates for magnetic hover tilt
+      mouseNormalizedRef.current.x = mouseScreenRef.current.x;
+      mouseNormalizedRef.current.y = mouseScreenRef.current.y;
+
+      if (isDraggingRef.current && !isTransitioningRef.current) {
         const deltaX = e.clientX - previousMousePositionRef.current.x;
         const deltaY = e.clientY - previousMousePositionRef.current.y;
 
-        targetCameraAngleRef.current.theta -= deltaX * 0.006;
+        targetCameraAngleRef.current.theta -= deltaX * 0.0055;
         targetCameraAngleRef.current.phi = Math.max(
           -0.2,
-          Math.min(0.85, targetCameraAngleRef.current.phi + deltaY * 0.005)
+          Math.min(0.85, targetCameraAngleRef.current.phi + deltaY * 0.0045)
         );
 
         previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
@@ -308,16 +475,17 @@ export const ThreeGameScene = ({
     };
 
     const handleWheel = (e) => {
+      if (isTransitioningRef.current) return;
       e.preventDefault();
       targetCameraAngleRef.current.radius = Math.max(
         8,
-        Math.min(75, targetCameraAngleRef.current.radius + e.deltaY * 0.025)
+        Math.min(75, targetCameraAngleRef.current.radius + e.deltaY * 0.024)
       );
     };
 
-    // Click handler for 3D game cartridges
+    // Click handler with Apple-style Cinematic Fly-In
     const handleClick = (e) => {
-      // Ignore click if it was a drag
+      if (isTransitioningRef.current) return;
       if (
         Math.abs(e.clientX - previousMousePositionRef.current.x) > 5 ||
         Math.abs(e.clientY - previousMousePositionRef.current.y) > 5
@@ -333,19 +501,37 @@ export const ThreeGameScene = ({
         );
         raycasterRef.current.setFromCamera(clickMouse, cameraRef.current);
 
-        const clickableMeshes = gameMeshesRef.current.map((item) => item.cartridge);
+        const clickableMeshes = gameMeshesRef.current.map((item) => item.clickBox);
         const intersects = raycasterRef.current.intersectObjects(clickableMeshes);
 
         if (intersects.length > 0) {
-          const hitCartridge = intersects[0].object;
+          const hitMesh = intersects[0].object;
           const found = gameMeshesRef.current.find(
-            (item) => item.cartridge === hitCartridge
+            (item) => item.clickBox === hitMesh || item.cartridge === hitMesh
           );
           if (found) {
             soundFX.playSelect();
-            if (onSelectGameRef.current) {
-              onSelectGameRef.current(found.game);
-            }
+
+            // Initiate Apple Cinematic Fly-In Zoom
+            isTransitioningRef.current = true;
+            transitionStartRef.current = performance.now();
+            transitionGameRef.current = found.game;
+
+            // Compute current camera position
+            transitionStartPosRef.current.copy(cameraRef.current.position);
+
+            // Compute target position directly facing the cartridge
+            const cPos = new THREE.Vector3();
+            found.cartridge.getWorldPosition(cPos);
+
+            // Normal vector towards center
+            const dir = new THREE.Vector3().copy(cPos).normalize();
+            transitionTargetPosRef.current.set(
+              cPos.x + dir.x * 3.4,
+              cPos.y + 0.1,
+              cPos.z + dir.z * 3.4
+            );
+            transitionTargetLookRef.current.copy(cPos);
           }
         }
       }
@@ -357,107 +543,145 @@ export const ThreeGameScene = ({
     container.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('click', handleClick);
 
-    // 8. Animation loop
+    // 8. Animation Loop
     let animationFrameId;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     const renderLoop = () => {
       animationFrameId = requestAnimationFrame(renderLoop);
       const elapsedTime = clock.getElapsedTime();
 
-      // Auto rotation if enabled and not currently dragging
-      if (autoRotateRef.current && !isDraggingRef.current) {
-        targetCameraAngleRef.current.theta += 0.0018;
-      }
+      // Handle Apple Cinematic Fly-In Transition
+      if (isTransitioningRef.current && cameraRef.current) {
+        const now = performance.now();
+        const elapsedMs = now - transitionStartRef.current;
+        const progress = Math.min(1, elapsedMs / transitionDurationRef.current);
 
-      // Smooth camera interpolation (lerp)
-      cameraAngleRef.current.theta +=
-        (targetCameraAngleRef.current.theta - cameraAngleRef.current.theta) * 0.08;
-      cameraAngleRef.current.phi +=
-        (targetCameraAngleRef.current.phi - cameraAngleRef.current.phi) * 0.08;
-      cameraAngleRef.current.radius +=
-        (targetCameraAngleRef.current.radius - cameraAngleRef.current.radius) * 0.08;
+        // Apple signature cubic bezier ease-out (0.16, 1, 0.3, 1)
+        const t = progress;
+        const ease = 1 - Math.pow(1 - t, 3.8);
 
-      const camX =
-        cameraAngleRef.current.radius *
-        Math.sin(cameraAngleRef.current.theta) *
-        Math.cos(cameraAngleRef.current.phi);
-      const camY =
-        cameraAngleRef.current.radius * Math.sin(cameraAngleRef.current.phi) + 2.5;
-      const camZ =
-        cameraAngleRef.current.radius *
-        Math.cos(cameraAngleRef.current.theta) *
-        Math.cos(cameraAngleRef.current.phi);
-
-      camera.position.set(camX, camY, camZ);
-      camera.lookAt(0, 0.5, 0);
-
-      // Rotate particle galaxy gently
-      particles.rotation.y = elapsedTime * 0.02;
-      floorRing.rotation.z = -elapsedTime * 0.1;
-
-      // Raycasting for hover detection
-      raycasterRef.current.setFromCamera(mouseScreenRef.current, camera);
-      const clickableMeshes = gameMeshesRef.current.map((item) => item.cartridge);
-      const intersects = raycasterRef.current.intersectObjects(clickableMeshes);
-
-      let currentlyHovered = null;
-
-      if (intersects.length > 0) {
-        const hitCartridge = intersects[0].object;
-        const found = gameMeshesRef.current.find(
-          (item) => item.cartridge === hitCartridge
+        camera.position.lerpVectors(
+          transitionStartPosRef.current,
+          transitionTargetPosRef.current,
+          ease
         );
-        if (found) {
-          currentlyHovered = found.game;
-          container.style.cursor = 'pointer';
+        camera.lookAt(transitionTargetLookRef.current);
+
+        if (progress >= 1) {
+          isTransitioningRef.current = false;
+          if (onSelectGameRef.current && transitionGameRef.current) {
+            onSelectGameRef.current(transitionGameRef.current);
+          }
         }
       } else {
-        container.style.cursor = 'grab';
+        // Smooth Auto-Rotate with inertial momentum
+        if (autoRotateRef.current && !isDraggingRef.current) {
+          targetCameraAngleRef.current.theta += 0.0016;
+        }
+
+        // Apple-style damped camera interpolation (lerp)
+        cameraAngleRef.current.theta +=
+          (targetCameraAngleRef.current.theta - cameraAngleRef.current.theta) * 0.075;
+        cameraAngleRef.current.phi +=
+          (targetCameraAngleRef.current.phi - cameraAngleRef.current.phi) * 0.075;
+        cameraAngleRef.current.radius +=
+          (targetCameraAngleRef.current.radius - cameraAngleRef.current.radius) * 0.075;
+
+        const camX =
+          cameraAngleRef.current.radius *
+          Math.sin(cameraAngleRef.current.theta) *
+          Math.cos(cameraAngleRef.current.phi);
+        const camY =
+          cameraAngleRef.current.radius * Math.sin(cameraAngleRef.current.phi) + 2.4;
+        const camZ =
+          cameraAngleRef.current.radius *
+          Math.cos(cameraAngleRef.current.theta) *
+          Math.cos(cameraAngleRef.current.phi);
+
+        camera.position.set(camX, camY, camZ);
+        camera.lookAt(0, 0.5, 0);
+
+        // Raycasting for hover detection
+        raycasterRef.current.setFromCamera(mouseScreenRef.current, camera);
+        const clickableMeshes = gameMeshesRef.current.map((item) => item.clickBox);
+        const intersects = raycasterRef.current.intersectObjects(clickableMeshes);
+
+        let currentlyHovered = null;
+        if (intersects.length > 0) {
+          const hitMesh = intersects[0].object;
+          const found = gameMeshesRef.current.find(
+            (item) => item.clickBox === hitMesh || item.cartridge === hitMesh
+          );
+          if (found) {
+            currentlyHovered = found.game;
+            container.style.cursor = 'pointer';
+          }
+        } else {
+          container.style.cursor = 'grab';
+        }
+
+        if (currentlyHovered?.id !== hoveredGameRef.current?.id) {
+          hoveredGameRef.current = currentlyHovered;
+          if (onHoverGameRef.current) {
+            onHoverGameRef.current(currentlyHovered);
+          }
+          if (currentlyHovered) {
+            soundFX.playHover();
+          }
+        }
       }
 
-      if (currentlyHovered?.id !== hoveredGameRef.current?.id) {
-        hoveredGameRef.current = currentlyHovered;
-        if (onHoverGameRef.current) {
-          onHoverGameRef.current(currentlyHovered);
-        }
-        if (currentlyHovered) {
-          soundFX.playHover();
-        }
-      }
+      // Rotate micro-particles & floor ring
+      particles.rotation.y = elapsedTime * 0.015;
+      floorRing.rotation.z = -elapsedTime * 0.08;
 
-      // Animate game meshes: floating sine waves, target interpolation, hover elevation
+      // Animate Game 3D Cartridges: Floating sine wave + Magnetic Hover Tilt
+      const mouseX = mouseNormalizedRef.current.x;
+      const mouseY = mouseNormalizedRef.current.y;
+
       gameMeshesRef.current.forEach((item, index) => {
-        // Move towards target layout position
         item.mesh.position.lerp(item.targetPosition, 0.08);
 
         const isHovered = item.game.id === hoveredGameRef.current?.id;
 
-        // Floating sine wave animation
+        // Smooth levitation with inertia
         const floatOffset =
-          Math.sin(elapsedTime * 1.6 + index * 0.6) * 0.22 +
-          (isHovered ? 0.7 : 0);
+          Math.sin(elapsedTime * 1.5 + index * 0.5) * 0.2 + (isHovered ? 0.85 : 0);
         item.cartridge.position.y = floatOffset;
 
-        // Make cartridge face center of scene, plus slight tilt
-        if (!isHovered) {
-          item.mesh.rotation.y =
-            Math.atan2(item.mesh.position.x, item.mesh.position.z) + Math.PI;
-          item.cartridge.rotation.z = Math.sin(elapsedTime * 1.5 + index) * 0.03;
-        } else {
-          // Point directly toward camera when hovered
+        // Magnetic Hover Tilt: Tilt slightly toward cursor when hovered
+        if (isHovered) {
           const lookAngle = Math.atan2(
             camera.position.x - item.mesh.position.x,
             camera.position.z - item.mesh.position.z
           );
           item.mesh.rotation.y = lookAngle;
-          item.cartridge.rotation.y = Math.sin(elapsedTime * 4) * 0.08;
+
+          // Apple spring tilt
+          const targetTiltX = -mouseY * 0.25;
+          const targetTiltY = mouseX * 0.25;
+          item.cartridge.rotation.x += (targetTiltX - item.cartridge.rotation.x) * 0.12;
+          item.cartridge.rotation.y += (targetTiltY - item.cartridge.rotation.y) * 0.12;
+        } else {
+          item.mesh.rotation.y =
+            Math.atan2(item.mesh.position.x, item.mesh.position.z) + Math.PI;
+          item.cartridge.rotation.x += (0 - item.cartridge.rotation.x) * 0.1;
+          item.cartridge.rotation.y += (0 - item.cartridge.rotation.y) * 0.1;
+          item.cartridge.rotation.z = Math.sin(elapsedTime * 1.2 + index) * 0.025;
         }
 
-        // Pulse base ring
+        // Dynamic Soft Contact Shadow beneath each cartridge
+        if (item.shadowDisc) {
+          const shadowScale = isHovered ? 1.4 : 1.0 + Math.sin(elapsedTime * 1.5) * 0.08;
+          item.shadowDisc.scale.set(shadowScale, shadowScale, shadowScale);
+          item.shadowDisc.material.opacity = isHovered ? 0.45 : 0.65;
+        }
+
+        // Pulse Hologram Base Ring
         if (item.baseRing) {
           item.baseRing.rotation.z += 0.02;
-          const ringScale = isHovered ? 1.3 : 1 + Math.sin(elapsedTime * 3) * 0.05;
+          const ringScale = isHovered ? 1.35 : 1 + Math.sin(elapsedTime * 2.8) * 0.05;
           item.baseRing.scale.set(ringScale, ringScale, ringScale);
         }
       });
@@ -476,46 +700,58 @@ export const ThreeGameScene = ({
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('click', handleClick);
 
-      // Dispose Three.js objects
       renderer.dispose();
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []); // Run once on mount! Stable callbacks stored in refs
+  }, []);
 
-  // Re-calculate & build game 3D objects whenever `games` or layout changes
+  // Build Sculpted 3D Cartridge Models whenever games list or layout changes
   useEffect(() => {
     const scene = sceneRef.current;
+    const renderer = rendererRef.current;
     if (!scene) return;
 
-    // Clean up old meshes
+    // Dispose old meshes
     gameMeshesRef.current.forEach((item) => {
       scene.remove(item.mesh);
-      item.cartridge.geometry.dispose();
-      if (Array.isArray(item.cartridge.material)) {
-        item.cartridge.material.forEach((m) => m.dispose());
-      } else {
-        item.cartridge.material.dispose();
+      if (item.cartridge) {
+        item.cartridge.traverse((child) => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((m) => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        });
       }
-      item.baseRing.geometry.dispose();
-      item.baseRing.material.dispose();
+      if (item.shadowDisc) {
+        item.shadowDisc.geometry.dispose();
+        item.shadowDisc.material.dispose();
+      }
+      if (item.baseRing) {
+        item.baseRing.geometry.dispose();
+        item.baseRing.material.dispose();
+      }
     });
     gameMeshesRef.current = [];
 
     const total = games.length;
     if (total === 0) return;
 
+    // Contact shadow texture for all floor discs
+    const contactShadowTex = createContactShadowTexture();
+
     games.forEach((game, index) => {
       const group = new THREE.Group();
 
-      // Determine 3D Layout Target Position (GUARANTEED NO COLLISION)
+      // Layout positioning logic (Amphitheater Coliseum, IMAX Grid, DNA Helix)
       const targetPos = new THREE.Vector3();
 
       if (layoutMode === 'ring') {
-        // Tiered amphitheater coliseum for 200+ games:
-        // Each tier has a carefully calibrated circumference and capacity so adjacent cartridges
-        // have >= 5.5 units of distance (cartridge width is 2.6, so >= 2.9 units of open space).
         const tierCapacities = [14, 20, 26, 32, 38, 44, 50];
         const tierRadii = [12.5, 18.0, 23.5, 29.0, 34.5, 40.0, 46.0];
 
@@ -527,7 +763,10 @@ export const ThreeGameScene = ({
         for (let t = 0; t < tierCapacities.length; t++) {
           const cap = tierCapacities[t];
           const remaining = total - accumulated;
-          const countForThisTier = (t === tierCapacities.length - 1) ? Math.max(1, remaining) : Math.min(cap, Math.max(1, remaining));
+          const countForThisTier =
+            t === tierCapacities.length - 1
+              ? Math.max(1, remaining)
+              : Math.min(cap, Math.max(1, remaining));
 
           if (index < accumulated + countForThisTier || t === tierCapacities.length - 1) {
             tier = t;
@@ -538,16 +777,15 @@ export const ThreeGameScene = ({
           accumulated += countForThisTier;
         }
 
-        const tierRadius = tierRadii[tier] || (46 + (tier - 6) * 5.5);
-        const tierY = tier * 3.8; // Cartridge height is 3.2, so 3.8 gives clean 0.6 gap between tiers
-        const tierAngleOffset = tier * 0.32; // Staggered angle between tiers for optimal visual line of sight
+        const tierRadius = tierRadii[tier] || 46 + (tier - 6) * 5.5;
+        const tierY = tier * 3.8;
+        const tierAngleOffset = tier * 0.32;
         const angle = (indexInTier / itemsInThisTier) * Math.PI * 2 + tierAngleOffset;
 
         targetPos.x = Math.sin(angle) * tierRadius;
         targetPos.z = Math.cos(angle) * tierRadius;
         targetPos.y = tierY;
       } else if (layoutMode === 'grid') {
-        // Sweeping curved IMAX command wall with guaranteed 5.4 spacing
         const cols = Math.min(10, Math.max(4, Math.ceil(Math.sqrt(total * 1.1))));
         const col = index % cols;
         const row = Math.floor(index / cols);
@@ -569,71 +807,121 @@ export const ThreeGameScene = ({
         targetPos.y = (index - total / 2) * 0.95;
       }
 
-      // Initial position for smooth entry transition
       group.position.set(targetPos.x * 1.4, targetPos.y + 5, targetPos.z * 1.4);
 
-      // Cartridge Box Geometry: Width=2.6, Height=3.2, Depth=0.5
-      const geometry = new THREE.BoxGeometry(2.6, 3.2, 0.5);
+      // --- SCULPTED 3D CARTRIDGE MODEL ASSEMBLY ---
+      const cartridgeAssembly = new THREE.Group();
 
-      // Generate front texture with custom game artwork and VIP styling
-      const frontTexture = createGameTexture(game, isVipUnlocked);
-
-      // Multi-material for 6 faces: Right, Left, Top, Bottom, Front, Back
       const isGold = isVipUnlocked || game.vip;
-      const edgeBaseColor = isGold ? '#f59e0b' : (game.color || '#00ffcc');
-      const sideColor = new THREE.Color(edgeBaseColor).multiplyScalar(isGold ? 0.6 : 0.3);
-      const edgeMaterial = new THREE.MeshStandardMaterial({
-        color: sideColor,
-        roughness: isGold ? 0.2 : 0.3,
-        metalness: isGold ? 0.9 : 0.8,
-      });
+      const edgeBaseColor = isGold ? '#f59e0b' : game.color || '#00ffcc';
+      const bodyTitaniumColor = isGold ? 0x1f1708 : 0x0c0f17;
 
-      const frontMaterial = new THREE.MeshStandardMaterial({
-        map: frontTexture,
-        roughness: isGold ? 0.15 : 0.2,
-        metalness: isGold ? 0.6 : 0.4,
+      // 1. Main Outer Titanium Chassis
+      const bodyGeo = new THREE.BoxGeometry(2.6, 3.4, 0.42);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: bodyTitaniumColor,
+        roughness: isGold ? 0.22 : 0.28,
+        metalness: isGold ? 0.88 : 0.78,
+      });
+      const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+      bodyMesh.castShadow = true;
+      bodyMesh.receiveShadow = true;
+      cartridgeAssembly.add(bodyMesh);
+
+      // 2. Top Grip Grooves (3 horizontal recessed slots molded into top)
+      for (let g = 0; g < 3; g++) {
+        const grooveGeo = new THREE.BoxGeometry(1.9, 0.05, 0.44);
+        const grooveMat = new THREE.MeshStandardMaterial({
+          color: 0x040609,
+          roughness: 0.6,
+          metalness: 0.3,
+        });
+        const groove = new THREE.Mesh(grooveGeo, grooveMat);
+        groove.position.set(0, 1.45 - g * 0.14, 0);
+        cartridgeAssembly.add(groove);
+      }
+
+      // 3. Recessed 4K Front Artwork Screen
+      const frontTex = createGameTexture(game, isVipUnlocked, renderer);
+      const screenGeo = new THREE.PlaneGeometry(2.38, 3.16);
+      const screenMat = new THREE.MeshStandardMaterial({
+        map: frontTex,
+        roughness: isGold ? 0.12 : 0.18,
+        metalness: isGold ? 0.55 : 0.35,
         emissive: new THREE.Color(edgeBaseColor),
-        emissiveIntensity: isGold ? 0.25 : 0.15,
+        emissiveIntensity: isGold ? 0.22 : 0.12,
       });
+      const screenMesh = new THREE.Mesh(screenGeo, screenMat);
+      screenMesh.position.set(0, 0, 0.215);
+      cartridgeAssembly.add(screenMesh);
 
-      const backMaterial = new THREE.MeshStandardMaterial({
-        color: isGold ? 0x140d02 : 0x090d16,
-        roughness: 0.5,
-        metalness: 0.8,
+      // 4. Protective Clear-Coat Acrylic Glass Lens
+      const glassGeo = new THREE.PlaneGeometry(2.38, 3.16);
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.04,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.22,
       });
+      const glassMesh = new THREE.Mesh(glassGeo, glassMat);
+      glassMesh.position.set(0, 0, 0.22);
+      cartridgeAssembly.add(glassMesh);
 
-      const materials = [
-        edgeMaterial, // +X
-        edgeMaterial, // -X
-        edgeMaterial, // +Y
-        edgeMaterial, // -Y
-        frontMaterial, // +Z (Front)
-        backMaterial, // -Z (Back)
-      ];
+      // 5. Gold Connector Terminal Blades (At bottom bay)
+      const goldBladeMat = new THREE.MeshStandardMaterial({
+        color: 0xffd700,
+        roughness: 0.08,
+        metalness: 0.96,
+      });
+      for (let pin = 0; pin < 8; pin++) {
+        const pinGeo = new THREE.BoxGeometry(0.12, 0.2, 0.04);
+        const pinMesh = new THREE.Mesh(pinGeo, goldBladeMat);
+        pinMesh.position.set(-0.85 + pin * 0.24, -1.72, 0);
+        cartridgeAssembly.add(pinMesh);
+      }
 
-      const cartridge = new THREE.Mesh(geometry, materials);
-      cartridge.castShadow = true;
-      cartridge.receiveShadow = true;
-      group.add(cartridge);
+      // Clickable Raycast Hit Box
+      const hitBoxGeo = new THREE.BoxGeometry(2.7, 3.5, 0.6);
+      const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
+      const clickBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+      cartridgeAssembly.add(clickBox);
 
-      // Floor Hologram Ring beneath each cartridge
-      const ringGeo = new THREE.RingGeometry(1.4, 1.6, 32);
+      group.add(cartridgeAssembly);
+
+      // Dynamic Contact Floor Shadow Disc
+      const shadowGeo = new THREE.PlaneGeometry(3.6, 3.6);
+      const shadowMat = new THREE.MeshBasicMaterial({
+        map: contactShadowTex,
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false,
+      });
+      const shadowDisc = new THREE.Mesh(shadowGeo, shadowMat);
+      shadowDisc.rotation.x = -Math.PI / 2;
+      shadowDisc.position.y = -3.8;
+      group.add(shadowDisc);
+
+      // Floor Halo Ring (Apple Vision Pro subtle floor glow)
+      const ringGeo = new THREE.RingGeometry(1.4, 1.56, 32);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(game.color || '#00ffcc'),
+        color: new THREE.Color(isGold ? '#e5c158' : game.color || '#2997ff'),
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.7,
+        opacity: isGold ? 0.55 : 0.4,
       });
       const baseRing = new THREE.Mesh(ringGeo, ringMat);
       baseRing.rotation.x = Math.PI / 2;
-      baseRing.position.y = -3.8;
+      baseRing.position.y = -3.78;
       group.add(baseRing);
 
       scene.add(group);
 
       gameMeshesRef.current.push({
         mesh: group,
-        cartridge,
+        cartridge: cartridgeAssembly,
+        clickBox,
+        shadowDisc,
         baseRing,
         game,
         targetPosition: targetPos,
@@ -648,67 +936,22 @@ export const ThreeGameScene = ({
     const isGold = isVipUnlocked;
 
     if (dirLight1Ref.current) {
-      dirLight1Ref.current.color.setHex(isGold ? 0xfbbf24 : 0x00ffcc);
-      dirLight1Ref.current.intensity = isGold ? 1.8 : 1.4;
+      dirLight1Ref.current.color.setHex(isGold ? 0xfffaed : 0xffffff);
+    }
+    if (dirLight2Ref.current) {
+      dirLight2Ref.current.color.setHex(isGold ? 0xe5c158 : 0x2997ff);
     }
     if (centerPointLightRef.current) {
-      centerPointLightRef.current.color.setHex(isGold ? 0xf59e0b : 0x00ffcc);
+      centerPointLightRef.current.color.setHex(isGold ? 0xe5c158 : 0x2997ff);
     }
     if (floorRingRef.current && floorRingRef.current.material) {
-      floorRingRef.current.material.color.setHex(isGold ? 0xfbbf24 : 0x00ffcc);
-      floorRingRef.current.material.opacity = isGold ? 0.8 : 0.5;
-    }
-    if (particlesRef.current && particlesRef.current.geometry) {
-      const colors = particlesRef.current.geometry.attributes.color.array;
-      const count = colors.length / 3;
-      for (let i = 0; i < count; i++) {
-        const c = new THREE.Color(
-          isGold
-            ? (i % 3 === 0 ? 0xfbbf24 : i % 3 === 1 ? 0xf59e0b : 0xffffff)
-            : (i % 3 === 0 ? 0x00ffcc : i % 3 === 1 ? 0x7000ff : 0xffffff)
-        );
-        colors[i * 3] = c.r;
-        colors[i * 3 + 1] = c.g;
-        colors[i * 3 + 2] = c.b;
-      }
-      particlesRef.current.geometry.attributes.color.needsUpdate = true;
+      floorRingRef.current.material.color.setHex(isGold ? 0xe5c158 : 0x2997ff);
     }
   }, [isVipUnlocked, sceneReady]);
 
-  // Handle Filtering (dim/scale non-matching games)
-  useEffect(() => {
-    const q = searchQuery.trim().toLowerCase();
-    gameMeshesRef.current.forEach(({ mesh, cartridge, game }) => {
-      const matchCategory =
-        activeCategory === 'All' ||
-        game.category.toLowerCase() === activeCategory.toLowerCase();
-      const matchSearch =
-        !q ||
-        game.title.toLowerCase().includes(q) ||
-        game.description.toLowerCase().includes(q) ||
-        game.category.toLowerCase().includes(q);
-
-      const isMatch = matchCategory && matchSearch;
-
-      // Smooth visual transition for matches
-      const targetScale = isMatch ? 1 : 0.45;
-      mesh.scale.set(targetScale, targetScale, targetScale);
-
-      // Adjust opacity of materials
-      if (Array.isArray(cartridge.material)) {
-        cartridge.material.forEach((mat) => {
-          mat.transparent = true;
-          mat.opacity = isMatch ? 1 : 0.18;
-        });
-      }
-    });
-  }, [activeCategory, searchQuery]);
-
   return (
-    <div
-      ref={mountRef}
-      id="three-canvas-container"
-      className="absolute inset-0 w-full h-full overflow-hidden select-none"
-    />
+    <div className="relative w-full h-full select-none overflow-hidden bg-[#040508]">
+      <div ref={mountRef} className="w-full h-full" />
+    </div>
   );
 };

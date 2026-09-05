@@ -1,437 +1,343 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, Play, X, Zap, ArrowRight, Folder, EyeOff, Crown, Skull } from 'lucide-react';
 import { INITIAL_GAMES } from './data/fallbackGames.js';
-import { ThreeGameScene } from './components/ThreeGameScene.jsx';
-import { TopNav } from './components/TopNav.jsx';
-import { HologramHUD } from './components/HologramHUD.jsx';
-import { GameOverlay } from './components/GameOverlay.jsx';
-import { AddGameModal } from './components/AddGameModal.jsx';
 import { DeltaMathView } from './components/DeltaMathView.jsx';
 import { PasscodeModal } from './components/PasscodeModal.jsx';
 import { VipPasscodeModal } from './components/VipPasscodeModal.jsx';
-import { GameBrowserDrawer } from './components/GameBrowserDrawer.jsx';
-import { soundFX } from './utils/audio.js';
-import { Crown, Sparkles } from 'lucide-react';
 
-const STORAGE_KEY_FAVS = 'unblocked_fav_games';
-const STORAGE_KEY_CUSTOM = 'unblocked_custom_games';
-const STORAGE_KEY_VIP = 'unblocked_vip_0711';
+// Search internet for game thumbnail using Bing Image Search proxy
+const getThumbnail = (game) => {
+  if (game.image) return game.image;
+  const query = encodeURIComponent(`${game.title} game icon cover`);
+  return `https://tse2.mm.bing.net/th?q=${query}&w=300&h=300&c=7&rs=1&p=0&dpr=1&pid=1.7&mkt=en-US&adlt=moderate`;
+};
 
 export default function App() {
-  // Disguise / Unlock state: Starts in DeltaMath mode as requested
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isPasscodeOpen, setIsPasscodeOpen] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showUnlockToast, setShowUnlockToast] = useState(false);
-  const [unlockToastMessage, setUnlockToastMessage] = useState('');
-
-  // VIP section passkey state (Code: 0711)
-  const [isVipUnlocked, setIsVipUnlocked] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY_VIP) === 'true';
-    } catch {
-      return false;
-    }
-  });
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
-  const [focusedGame, setFocusedGame] = useState(null);
-
-  const [games, setGames] = useState(INITIAL_GAMES);
-  const [favorites, setFavorites] = useState([]);
-  const [activeGame, setActiveGame] = useState(null);
-  const [hoveredGame, setHoveredGame] = useState(null);
+  const [isVipUnlocked, setIsVipUnlocked] = useState(false);
+  const [isJumpscareActive, setIsJumpscareActive] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [layoutMode, setLayoutMode] = useState('ring');
-  const [autoRotate, setAutoRotate] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeGame, setActiveGame] = useState(null);
 
-  // Sync document title to current mode
+  // Global hotkey to re-engage cloak
   useEffect(() => {
-    if (!isUnlocked) {
-      document.title = 'DeltaMath - Student Dashboard';
-    } else if (activeGame) {
-      document.title = `${activeGame.title} - 3D Unblocked Games Hub`;
-    } else {
-      document.title = '3D Unblocked Games Hub';
-    }
-  }, [isUnlocked, activeGame]);
-
-  // Global hotkeys: '~' or '\' to open secret passcode from DeltaMath; 'Escape' to panic back to DeltaMath
-  useEffect(() => {
-    const handleGlobalKeyDown = (e) => {
-      if (!isUnlocked) {
-        if (e.key === '`' || e.key === '~' || e.key === '\\') {
-          e.preventDefault();
-          soundFX.playKeyClick();
-          setIsPasscodeOpen(true);
-        }
-      } else {
-        // If in games view and no active game or modal is open, pressing 'p' or 'Escape' cloaks back to DeltaMath
-        if ((e.key === 'Escape' || e.key === 'p' || e.key === 'P') && !activeGame && !isAddModalOpen) {
-          soundFX.playClose();
+    const handleKeyDown = (e) => {
+      // Re-engage cloak on Escape key press if currently unlocked
+      if (e.key === 'Escape') {
+        if (isUnlocked) {
           setIsUnlocked(false);
+          setActiveGame(null);
         }
       }
     };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isUnlocked, activeGame, isAddModalOpen]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isUnlocked]);
 
-  // Load favorites & custom games from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedFavs = localStorage.getItem(STORAGE_KEY_FAVS);
-      if (savedFavs) {
-        setFavorites(JSON.parse(savedFavs));
-      }
-
-      const savedCustom = localStorage.getItem(STORAGE_KEY_CUSTOM);
-      const customGames = savedCustom ? JSON.parse(savedCustom) : [];
-
-      // Fetch games from JSON file (relative path for GitHub Pages compatibility)
-      const gamesUrl = `${import.meta.env.BASE_URL || './'}games.json`.replace('//', '/');
-      fetch(gamesUrl)
-        .then((res) => {
-          if (!res.ok) throw new Error('Failed to fetch games.json');
-          return res.json();
-        })
-        .then((data) => {
-          if (data && Array.isArray(data.games) && data.games.length > 0) {
-            setGames([...customGames, ...data.games]);
-          } else {
-            setGames([...customGames, ...INITIAL_GAMES]);
-          }
-        })
-        .catch(() => {
-          setGames([...customGames, ...INITIAL_GAMES]);
-        });
-    } catch {
-      setGames(INITIAL_GAMES);
-    }
-  }, []);
-
-  // Sync sound toggle to soundFX instance
-  useEffect(() => {
-    soundFX.enabled = soundEnabled;
-  }, [soundEnabled]);
-
-  // Handle Passcode Success (0711 or 1234 entered): Apple-quality transition
-  const handlePasscodeSuccess = useCallback((isVip = false) => {
+  const handlePasscodeSuccess = (isVip) => {
     setIsPasscodeOpen(false);
-    setIsTransitioning(true);
-    soundFX.playTransitionWhoosh();
-
-    setTimeout(() => {
-      setIsUnlocked(true);
-      setIsTransitioning(false);
-      if (isVip) {
-        setIsVipUnlocked(true);
-        try {
-          localStorage.setItem(STORAGE_KEY_VIP, 'true');
-        } catch {
-          // ignore
-        }
-        setUnlockToastMessage('👑 VIP 24K EXECUTIVE ACCESS GRANTED');
-      } else {
-        setUnlockToastMessage('ACCESS GRANTED • PRESS ESC OR CLICK Δ DELTAMATH TO RETURN TO CLASS');
-      }
-      setShowUnlockToast(true);
-      setTimeout(() => setShowUnlockToast(false), 5000);
-    }, 850);
-  }, []);
-
-  // Handle dedicated VIP Vault Passcode Success (0711)
-  const handleVipPasscodeSuccess = useCallback(() => {
+    if (isVip) {
+      setIsVipUnlocked(true);
+    }
+    // Small delay to allow passcode modal to close before morphing
+    setTimeout(() => setIsUnlocked(true), 150);
+  };
+  
+  const handleVipPasscodeSuccess = () => {
     setIsVipModalOpen(false);
     setIsVipUnlocked(true);
-    try {
-      localStorage.setItem(STORAGE_KEY_VIP, 'true');
-    } catch {
-      // ignore
-    }
-    setUnlockToastMessage('👑 VIP 24K GOLD VAULT UNLOCKED • 216+ TITLES ACTIVATED');
-    setShowUnlockToast(true);
-    soundFX.playVipFanfare();
-    setTimeout(() => setShowUnlockToast(false), 5000);
-  }, []);
+  };
 
-  // Return / Cloak back to DeltaMath
-  const handleCloakToDeltaMath = useCallback(() => {
-    soundFX.playClose();
-    setActiveGame(null);
-    setIsUnlocked(false);
-  }, []);
+  const triggerJumpscare = () => {
+    const audio = new Audio('https://www.myinstants.com/media/sounds/fnaf-jumpscare-sound.mp3');
+    audio.play().catch((e) => console.log('Audio autoplay blocked:', e));
+    setIsJumpscareActive(true);
+    setTimeout(() => {
+      setIsJumpscareActive(false);
+    }, 2500);
+  };
 
-  // Memoized handlers to keep Three.js scene rock solid
-  const handleHoverGame = useCallback((game) => {
-    setHoveredGame(game);
-  }, []);
-
-  const handleSelectGame = useCallback((game) => {
-    setActiveGame(game);
-  }, []);
-
-  // Focus a game in 3D scene from catalog drawer
-  const handleFocusGameInScene = useCallback((game) => {
-    setFocusedGame(game);
-    setHoveredGame(game);
-  }, []);
-
-  // Toggle favorite
-  const handleToggleFavorite = useCallback((gameId) => {
-    setFavorites((prev) => {
-      const isFav = prev.includes(gameId);
-      const next = isFav ? prev.filter((id) => id !== gameId) : [...prev, gameId];
-      try {
-        localStorage.setItem(STORAGE_KEY_FAVS, JSON.stringify(next));
-      } catch {
-        // LocalStorage fallback
-      }
-      return next;
-    });
-  }, []);
-
-  // Add custom game
-  const handleAddGame = useCallback((newGame) => {
-    setGames((prev) => {
-      const updated = [newGame, ...prev];
-      try {
-        const savedCustom = localStorage.getItem(STORAGE_KEY_CUSTOM);
-        const customList = savedCustom ? JSON.parse(savedCustom) : [];
-        localStorage.setItem(STORAGE_KEY_CUSTOM, JSON.stringify([newGame, ...customList]));
-      } catch {
-        // LocalStorage fallback
-      }
-      return updated;
-    });
-  }, []);
-
-  // Categories list
+  // Extract categories
   const categories = useMemo(() => {
-    const rawCategories = Array.from(new Set(games.map((g) => g.category)));
-    const base = ['All', 'Favorites'];
-    if (isVipUnlocked) {
-      base.push('VIP Exclusive');
-    }
-    return [...base, ...rawCategories];
-  }, [games, isVipUnlocked]);
+    const cats = new Set(INITIAL_GAMES.map((g) => g.category));
+    return ['All', ...Array.from(cats)];
+  }, []);
 
-  // Filtered games list
+  // Filter games
   const filteredGames = useMemo(() => {
-    return games.filter((game) => {
-      if (activeCategory === 'Favorites') {
-        if (!favorites.includes(game.id)) return false;
-      } else if (activeCategory === 'VIP Exclusive') {
-        if (!game.vip) return false;
-      } else if (activeCategory !== 'All') {
-        if (game.category.toLowerCase() !== activeCategory.toLowerCase()) return false;
-      }
+    let filtered = INITIAL_GAMES;
+    if (activeCategory !== 'All') {
+      filtered = filtered.filter((g) => g.category === activeCategory);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (g) =>
+          g.title.toLowerCase().includes(q) ||
+          g.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    return filtered;
+  }, [searchQuery, activeCategory]);
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          game.title.toLowerCase().includes(q) ||
-          game.description.toLowerCase().includes(q) ||
-          game.category.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [games, activeCategory, favorites, searchQuery]);
-
-  // Pick random game
-  const handleRandomGame = useCallback(() => {
-    const pool = filteredGames.length > 0 ? filteredGames : games;
-    if (pool.length === 0) return;
-    const random = pool[Math.floor(Math.random() * pool.length)];
-    setActiveGame(random);
-  }, [filteredGames, games]);
-
-  // 1. Initial State: Authentic DeltaMath Platform View
-  if (!isUnlocked && !isTransitioning) {
-    return (
-      <div className="relative w-full min-h-screen">
-        <DeltaMathView onOpenSecretCode={() => setIsPasscodeOpen(true)} />
-        <PasscodeModal
-          isOpen={isPasscodeOpen}
-          onClose={() => setIsPasscodeOpen(false)}
-          onSuccess={handlePasscodeSuccess}
-        />
-      </div>
-    );
-  }
-
-  // 2. Active Unblocked 3D Games Hub with Apple Website Quality Transition
   return (
-    <div
-      className={`relative w-screen h-screen overflow-hidden bg-[#050505] text-white font-['Plus_Jakarta_Sans',sans-serif] select-none ${
-        isTransitioning ? 'animate-portal' : 'animate-apple-in'
-      }`}
-    >
-      {/* Apple-grade Transition Aperture Veil */}
-      {isTransitioning && (
-        <div className="fixed inset-0 z-[90] pointer-events-none bg-radial from-transparent via-black/40 to-black animate-pulse" />
-      )}
+    <div className="min-h-screen relative overflow-hidden bg-transparent">
+      <AnimatePresence mode="wait">
+        {!isUnlocked ? (
+          <motion.div
+            key="deltamath-cloak"
+            initial={{ opacity: 0, scale: 0.98, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 w-full h-full overflow-y-auto bg-white"
+          >
+            <DeltaMathView onOpenSecretCode={() => setIsPasscodeOpen(true)} />
+            <PasscodeModal
+              isOpen={isPasscodeOpen}
+              onClose={() => setIsPasscodeOpen(false)}
+              onSuccess={handlePasscodeSuccess}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="zine-arcade"
+            initial={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.98, filter: 'blur(8px)' }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+            className="w-full min-h-screen p-4 md:p-8 flex flex-col max-w-7xl mx-auto relative z-10"
+          >
+            {/* Brutalist Header */}
+            <header className="brutal-border bg-[#FF90E8] brutal-shadow p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div>
+                <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none mb-2">
+                  26JN Hangout
+                </h1>
+                <div className="flex items-center gap-3">
+                  <p className="text-xl font-bold bg-white inline-block px-2 brutal-border uppercase">
+                    100% UNBLOCKED & RAW
+                  </p>
+                  {isVipUnlocked ? (
+                    <span className="flex items-center gap-1 bg-[#FFC900] px-2 py-0.5 brutal-border font-black text-sm uppercase">
+                      <Crown className="w-4 h-4" /> VIP ACTIVE
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setIsVipModalOpen(true)}
+                      className="flex items-center gap-1 bg-black text-white hover:bg-yellow-400 hover:text-black px-2 py-0.5 brutal-border font-black text-sm uppercase transition-colors cursor-pointer"
+                    >
+                      <Crown className="w-4 h-4" /> UNLOCK VIP
+                    </button>
+                  )}
+                </div>
+              </div>
 
-      {/* Frosted Glass Neon Atmosphere Gradients */}
-      <div className="absolute inset-0 opacity-40 pointer-events-none overflow-hidden z-0">
-        <div
-          className={`absolute top-[-10%] left-[-10%] w-[55%] h-[55%] rounded-full blur-[140px] animate-pulse transition-all duration-700 ${
-            isVipUnlocked ? 'bg-[#f59e0b]' : 'bg-[#00FFCC]'
-          }`}
-          style={{ animationDuration: '9s' }}
-        />
-        <div
-          className={`absolute bottom-[-10%] right-[-10%] w-[45%] h-[60%] rounded-full blur-[120px] animate-pulse transition-all duration-700 ${
-            isVipUnlocked ? 'bg-[#fbbf24]' : 'bg-[#7000FF]'
-          }`}
-          style={{ animationDuration: '12s' }}
-        />
-      </div>
+              {/* Marquee Ticker & Cloak Button */}
+              <div className="flex flex-col gap-3 w-full md:w-auto items-end">
+                <button
+                  onClick={() => setIsUnlocked(false)}
+                  className="flex items-center gap-2 bg-black text-[#00E5FF] px-3 py-1.5 font-bold uppercase text-sm brutal-border hover:bg-[#00E5FF] hover:text-black transition-colors brutal-active"
+                >
+                  <EyeOff className="w-4 h-4" /> Re-engage Cloak (Esc)
+                </button>
+                <div className="w-full md:w-64 bg-black text-[#00E5FF] p-2 brutal-border overflow-hidden whitespace-nowrap font-bold text-sm">
+                  <div className="animate-marquee">
+                    NO FILTERS • NO RULES • PURE GAMING • NO FILTERS • NO RULES • PURE GAMING • NO FILTERS • NO RULES • PURE GAMING •
+                  </div>
+                </div>
+              </div>
+            </header>
 
-      {/* Three.js Interactive 3D WebGL Canvas */}
-      <ThreeGameScene
-        games={games}
-        activeCategory={activeCategory}
-        searchQuery={searchQuery}
-        layoutMode={layoutMode}
-        autoRotate={autoRotate}
-        onSelectGame={handleSelectGame}
-        onHoverGame={handleHoverGame}
-        isVipUnlocked={isVipUnlocked}
-        focusedGame={focusedGame}
-      />
+            {/* Main Content Area */}
+            <div className="flex flex-col lg:flex-row gap-8 flex-1">
+              
+              {/* Sidebar / Controls */}
+              <aside className="w-full lg:w-64 flex flex-col gap-6 shrink-0">
+                
+                {/* Search Box */}
+                <div className="bg-[#FFC900] brutal-border brutal-shadow-sm p-4">
+                  <h2 className="font-black text-xl mb-3 flex items-center gap-2 uppercase">
+                    <Search className="w-5 h-5" /> Find Game
+                  </h2>
+                  <input
+                    type="text"
+                    placeholder="TYPE HERE..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full p-2 brutal-border bg-white text-black font-bold uppercase placeholder:text-gray-400 focus:outline-none focus:bg-[#00E5FF] transition-colors"
+                  />
+                </div>
 
-      {/* Top HUD: Search, Categories, Layout Modes, Random Launcher & DeltaMath Disguise */}
-      <TopNav
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        activeCategory={activeCategory}
-        onSelectCategory={setActiveCategory}
-        categories={categories}
-        layoutMode={layoutMode}
-        onChangeLayout={setLayoutMode}
-        autoRotate={autoRotate}
-        onToggleAutoRotate={() => setAutoRotate((prev) => !prev)}
-        soundEnabled={soundEnabled}
-        onToggleSound={() => setSoundEnabled((prev) => !prev)}
-        onRandomGame={handleRandomGame}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
-        onCloakToDeltaMath={handleCloakToDeltaMath}
-        totalGames={games.length}
-        favCount={favorites.length}
-        isVipUnlocked={isVipUnlocked}
-        onOpenVipModal={() => setIsVipModalOpen(true)}
-        onOpenCatalog={() => setIsCatalogOpen(true)}
-      />
+                {/* Categories */}
+                <div className="bg-white brutal-border brutal-shadow-sm p-4">
+                  <h2 className="font-black text-xl mb-3 flex items-center gap-2 uppercase">
+                    <Folder className="w-5 h-5" /> Categories
+                  </h2>
+                  <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-2 scrollbar-hide">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`text-left font-bold uppercase px-3 py-2 brutal-border transition-all ${
+                          activeCategory === cat
+                            ? 'bg-black text-[#00E5FF] translate-x-1'
+                            : 'bg-white text-black hover:bg-[#FF90E8]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Secret Troll Button */}
+                <button
+                  onClick={triggerJumpscare}
+                  className="bg-red-600 text-white font-black text-xl brutal-border brutal-shadow-sm p-4 uppercase hover:bg-black hover:text-red-600 transition-colors brutal-active flex items-center justify-center gap-2 mt-auto"
+                >
+                  <Skull className="w-6 h-6" /> FREE VIP
+                </button>
+              </aside>
 
-      {/* Bottom Hologram HUD / Tooltip */}
-      <HologramHUD
-        hoveredGame={hoveredGame}
-        onSelectGame={handleSelectGame}
-        isFavorite={hoveredGame ? favorites.includes(hoveredGame.id) : false}
-        onToggleFavorite={handleToggleFavorite}
-        isVipUnlocked={isVipUnlocked}
-      />
+              {/* Game Grid */}
+              <main className="flex-1 bg-white brutal-border brutal-shadow p-6 relative min-h-[500px]">
+                
+                {/* Background decoration */}
+                <div className="absolute top-4 right-4 pointer-events-none opacity-20">
+                  <Zap className="w-32 h-32" />
+                </div>
 
-      {/* Unlock Toast Notification */}
-      {showUnlockToast && (
-        <div
-          className={`absolute top-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full border backdrop-blur-xl text-xs font-mono font-bold shadow-2xl animate-in fade-in slide-in-from-top-3 flex items-center gap-2 ${
-            isVipUnlocked
-              ? 'bg-amber-500/20 border-amber-400/60 text-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.4)]'
-              : 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 shadow-[0_0_30px_rgba(52,211,153,0.3)]'
-          }`}
-        >
-          {isVipUnlocked ? (
-            <Crown className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
-          ) : (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          )}
-          <span>
-            {unlockToastMessage ||
-              'ACCESS GRANTED • PRESS ESC OR CLICK Δ DELTAMATH TO RETURN TO CLASS'}
-          </span>
-        </div>
-      )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 relative z-10">
+                  {filteredGames.length > 0 ? (
+                    filteredGames.map((game) => (
+                      <motion.div
+                        key={game.id}
+                        layoutId={`game-${game.id}`}
+                        className={`bg-[#00E5FF] brutal-border brutal-shadow-sm flex flex-col group ${
+                          game.vip && !isVipUnlocked ? 'opacity-50 grayscale pointer-events-none' : ''
+                        }`}
+                      >
+                        <div className="relative aspect-video border-b-3 border-black overflow-hidden bg-black p-1">
+                          <img
+                            src={getThumbnail(game)}
+                            alt={game.title}
+                            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                          />
+                          <div className="absolute top-2 left-2 flex gap-1">
+                            <div className="bg-yellow-400 text-black px-2 py-0.5 text-xs font-black brutal-border uppercase">
+                              {game.category}
+                            </div>
+                            {game.vip && (
+                              <div className="bg-purple-500 text-white px-2 py-0.5 text-xs font-black brutal-border uppercase flex items-center gap-1">
+                                <Crown className="w-3 h-3" /> VIP
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 flex flex-col flex-1 bg-white">
+                          <h3 className="font-black text-xl uppercase mb-1 line-clamp-1">{game.title}</h3>
+                          <p className="text-sm font-bold text-gray-600 mb-4 line-clamp-2">
+                            {game.description}
+                          </p>
+                          <div className="mt-auto">
+                            <button
+                              onClick={() => setActiveGame(game)}
+                              className="w-full bg-[#FF90E8] text-black font-black uppercase brutal-border py-2 flex items-center justify-center gap-2 hover:bg-black hover:text-[#00E5FF] transition-colors brutal-active"
+                            >
+                              <Play className="w-5 h-5" /> Launch
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center flex flex-col items-center">
+                      <div className="text-4xl font-black uppercase bg-black text-[#00E5FF] p-4 brutal-border inline-block rotate-[-2deg]">
+                        NOTHING FOUND
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </main>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Frosted Glass Telemetry Status Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none hidden sm:flex items-center justify-between px-4 py-1.5 border-t border-white/10 bg-black/40 backdrop-blur-md text-[10px] font-mono tracking-wider text-white/50">
-        <div className="flex items-center gap-2">
-          <span
-            className={`w-2 h-2 rounded-full animate-pulse ${
-              isVipUnlocked ? 'bg-amber-400' : 'bg-[#00FFCC]'
-            }`}
+      {/* Game Player Overlay */}
+      <AnimatePresence>
+        {activeGame && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-4 md:inset-8 z-50 flex flex-col bg-white brutal-border brutal-shadow p-2"
+          >
+            {/* Player Header */}
+            <header className="flex items-center justify-between bg-black text-white p-3 brutal-border mb-2">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#FFC900] w-4 h-4 brutal-border"></div>
+                <h2 className="font-black text-xl md:text-2xl uppercase tracking-tighter">
+                  {activeGame.title} <span className="text-[#00E5FF]">// PLAYING</span>
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveGame(null)}
+                className="bg-[#FF90E8] text-black p-1 brutal-border hover:bg-white transition-colors brutal-active"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </header>
+
+            {/* Iframe Container */}
+            <div className="flex-1 brutal-border bg-black relative">
+              <iframe
+                src={activeGame.url}
+                title={activeGame.title}
+                className="absolute inset-0 w-full h-full border-none bg-white"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                allow="fullscreen"
+              />
+            </div>
+            
+            {/* Player Footer */}
+            <div className="mt-2 bg-[#00E5FF] text-black p-2 brutal-border flex items-center justify-between text-sm font-bold uppercase">
+              <div className="flex items-center gap-2">
+                <ArrowRight className="w-4 h-4" /> SECURE SANDBOX ACTIVE
+              </div>
+              <div>26JN HANGOUT V2.0</div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* JUMPSCARE OVERLAY */}
+      {isJumpscareActive && (
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center animate-[shake_0.1s_infinite]">
+          {/* We use a classic FNAF-style animatronic image */}
+          <img 
+            src="https://tse2.mm.bing.net/th?q=fnaf+jumpscare&w=1200&h=1200&c=7&rs=1&p=0&dpr=1&pid=1.7&mkt=en-US&adlt=moderate" 
+            alt="scary face" 
+            className="w-full h-full object-cover select-none pointer-events-none filter contrast-125 saturate-200"
           />
-          <span className="text-white/80 font-bold tracking-widest">
-            {isVipUnlocked ? 'VIP_SECURE_TUNNEL_ENABLED' : 'SECURE_TUNNEL_ENABLED'}
-          </span>
-          <span className="text-white/20">•</span>
-          <span className={isVipUnlocked ? 'text-amber-400' : 'text-[#00FFCC]'}>
-            0.02ms LATENCY
-          </span>
-          <span className="text-white/20">•</span>
-          <span className={isVipUnlocked ? 'text-amber-300 font-bold' : 'text-emerald-400'}>
-            {isVipUnlocked ? 'STATUS: VIP 24K GOLD' : 'STATUS: ONLINE'}
-          </span>
+          <div className="absolute inset-0 bg-red-600 mix-blend-overlay animate-pulse opacity-50 pointer-events-none"></div>
         </div>
-        <div className="flex items-center gap-3">
-          <span>
-            SYSTEM:{' '}
-            <strong className={isVipUnlocked ? 'text-amber-300' : 'text-white'}>
-              {isVipUnlocked ? 'VIP_EXECUTIVE_EDITION' : 'UNBLOCKED_V4'}
-            </strong>
-          </span>
-          <span className="text-white/20">•</span>
-          <span>
-            READY:{' '}
-            <strong className={isVipUnlocked ? 'text-amber-400' : 'text-[#00FFCC]'}>
-              {games.length} CARTRIDGES
-            </strong>
-          </span>
-        </div>
-      </footer>
-
-      {/* Fullscreen Iframe Game Player Overlay */}
-      {activeGame && (
-        <GameOverlay
-          game={activeGame}
-          onClose={() => setActiveGame(null)}
-          isFavorite={favorites.includes(activeGame.id)}
-          onToggleFavorite={handleToggleFavorite}
-        />
       )}
 
-      {/* Visual Game Browser Drawer (Matching Thumbnails & Quick Play) */}
-      <GameBrowserDrawer
-        isOpen={isCatalogOpen}
-        onClose={() => setIsCatalogOpen(false)}
-        games={games}
-        favorites={favorites}
-        onSelectGame={(game) => {
-          handleFocusGameInScene(game);
-          handleSelectGame(game);
-        }}
-        onFocusGameInScene={handleFocusGameInScene}
-        isVipUnlocked={isVipUnlocked}
-        onOpenVipModal={() => setIsVipModalOpen(true)}
-      />
-
-      {/* Dedicated VIP Section Passcode Modal (Code: 0711) */}
       <VipPasscodeModal
         isOpen={isVipModalOpen}
         onClose={() => setIsVipModalOpen(false)}
         onSuccess={handleVipPasscodeSuccess}
       />
-
-      {/* Modal: Add Custom Game to 3D Library */}
-      <AddGameModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddGame={handleAddGame}
-      />
     </div>
   );
 }
+

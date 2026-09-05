@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+@layer base {
+  body {
+    background-color: #fcf9f2;
+    background-image: radial-gradient(#000000 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: #000000;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -8,34 +21,37 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  
+  .brutal-border {
+    border: 3px solid #000;
+  }
+
+  .brutal-shadow {
+    box-shadow: 6px 6px 0px 0px #000;
+  }
+  
+  .brutal-shadow-sm {
+    box-shadow: 4px 4px 0px 0px #000;
+  }
+
+  .brutal-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px #000;
+  }
+  
+  .brutal-active:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px #000;
+  }
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-8px); }
-  40%, 80% { transform: translateX(8px); }
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
-@keyframes applePulse {
-  0% { transform: scale(0.97); opacity: 0; filter: blur(12px); }
-  50% { transform: scale(1.02); opacity: 0.8; filter: blur(4px); }
-  100% { transform: scale(1); opacity: 1; filter: blur(0px); }
+.animate-marquee {
+  display: flex;
+  white-space: nowrap;
+  animation: marquee 15s linear infinite;
 }
-
-@keyframes portalExpand {
-  0% { clip-path: circle(0% at 50% 50%); }
-  100% { clip-path: circle(150% at 50% 50%); }
-}
-
-.animate-shake {
-  animation: shake 0.4s ease-in-out;
-}
-
-.animate-portal {
-  animation: portalExpand 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-apple-in {
-  animation: applePulse 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-

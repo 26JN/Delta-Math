@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Crown, Sparkles, X, CheckCircle2, ShieldCheck, Lock, ArrowRight } from 'lucide-react';
+import { Crown, Sparkles, X, CheckCircle2, ShieldCheck, Lock } from 'lucide-react';
 import { soundFX } from '../utils/audio.js';
 
 export const VipPasscodeModal = ({ isOpen, onClose, onSuccess }) => {
@@ -119,28 +119,28 @@ export const VipPasscodeModal = ({ isOpen, onClose, onSuccess }) => {
 
         {/* Header Icon */}
         <div className="flex flex-col items-center text-center">
-          <div className="relative mb-3 flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 text-black shadow-[0_0_35px_rgba(245,158,11,0.5)]">
-            <Crown className="w-8 h-8 text-black" />
-            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+          <div className="relative mb-3 flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 text-black shadow-[0_0_35px_rgba(245,158,11,0.5)]">
+            <Crown className="w-7 h-7 text-black" />
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-400"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-400"></span>
             </span>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-[11px] font-mono font-bold tracking-widest uppercase mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-[11px] font-semibold tracking-wider uppercase mb-2">
             <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>VIP PASSKEY ACCESS</span>
+            <span>VIP Passkey Access</span>
           </div>
 
-          <h3 className="text-xl sm:text-2xl font-black text-white font-['Chakra_Petch'] tracking-tight">
-            VIP EXECUTIVE VAULT
+          <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            VIP Executive Vault
           </h3>
-          <p className="text-xs text-amber-100/70 mt-1.5 max-w-xs leading-relaxed">
-            Enter the 4-digit passkey to unlock the ultra gold theme and complete access to 200+ games.
+          <p className="text-xs text-amber-100/70 mt-1 max-w-xs leading-relaxed">
+            Enter the 4-digit passkey to unlock the 24K gold theme and full access to 220+ games.
           </p>
         </div>
 
-        {/* 4 Digit Passkey Inputs */}
+        {/* 4 Digit Passkey Inputs (Apple PIN style) */}
         <div className="flex justify-center gap-3 sm:gap-4 my-6">
           {digits.map((d, index) => (
             <input
@@ -152,7 +152,7 @@ export const VipPasscodeModal = ({ isOpen, onClose, onSuccess }) => {
               value={d}
               onChange={(e) => handleDigitChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
-              className={`w-13 h-16 sm:w-14 sm:h-18 text-center text-2xl sm:text-3xl font-black font-['Chakra_Petch'] rounded-2xl border transition-all duration-200 focus:outline-none ${
+              className={`w-12 h-16 sm:w-14 sm:h-16 text-center text-2xl font-bold rounded-2xl border transition-all duration-200 focus:outline-none ${
                 isSuccess
                   ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-[0_0_25px_rgba(251,191,36,0.6)]'
                   : isError
@@ -168,18 +168,18 @@ export const VipPasscodeModal = ({ isOpen, onClose, onSuccess }) => {
         {/* Status Indicator */}
         <div className="h-6 flex items-center justify-center text-center">
           {isSuccess ? (
-            <div className="flex items-center gap-2 text-amber-300 text-xs font-mono font-bold animate-in fade-in">
+            <div className="flex items-center gap-2 text-amber-300 text-xs font-semibold animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>PASSKEY VERIFIED • 216+ GAMES UNLOCKED</span>
+              <span>Passkey Verified • All VIP Cartridges Unlocked</span>
             </div>
           ) : isError ? (
-            <div className="flex items-center gap-2 text-red-400 text-xs font-mono font-bold animate-in fade-in">
-              <span>INVALID PASSKEY. TRY AGAIN</span>
+            <div className="flex items-center gap-2 text-red-400 text-xs font-semibold animate-in fade-in">
+              <span>Invalid passkey. Try again.</span>
             </div>
           ) : (
-            <div className="text-[11px] text-white/40 font-mono flex items-center gap-1.5">
+            <div className="text-[11px] text-white/40 font-medium flex items-center gap-1.5">
               <Lock className="w-3 h-3 text-amber-400/60" />
-              <span>ENTER 4-DIGIT EXECUTIVE PASSKEY</span>
+              <span>Enter 4-Digit Executive Passkey</span>
             </div>
           )}
         </div>
@@ -190,7 +190,7 @@ export const VipPasscodeModal = ({ isOpen, onClose, onSuccess }) => {
             <button
               key={num}
               onClick={() => handleKeypadPress(num.toString())}
-              className="py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/40 text-white font-bold text-base font-['Chakra_Petch'] transition active:scale-95 shadow-xs cursor-pointer"
+              className="py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/40 text-white font-semibold text-lg transition active:scale-95 cursor-pointer"
             >
               {num}
             </button>
@@ -202,31 +202,31 @@ export const VipPasscodeModal = ({ isOpen, onClose, onSuccess }) => {
               inputRefs[0].current?.focus();
             }}
             title="Clear all digits"
-            className="py-3 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white/60 hover:text-white font-mono text-xs font-bold transition active:scale-95 cursor-pointer"
+            className="py-3 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-white/60 hover:text-white text-xs font-medium transition active:scale-95 cursor-pointer"
           >
-            CLEAR
+            Clear
           </button>
           <button
             onClick={() => handleKeypadPress('0')}
-            className="py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/40 text-white font-bold text-base font-['Chakra_Petch'] transition active:scale-95 shadow-xs cursor-pointer"
+            className="py-3 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/40 text-white font-semibold text-lg transition active:scale-95 cursor-pointer"
           >
             0
           </button>
           <button
             onClick={handleKeypadBackspace}
-            className="py-3 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-400/40 text-white/70 hover:text-red-300 font-mono text-xs font-bold transition active:scale-95 shadow-xs cursor-pointer"
+            className="py-3 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-400/40 text-white/70 hover:text-red-300 text-xs font-medium transition active:scale-95 cursor-pointer"
           >
-            ⌫ DEL
+            ⌫ Del
           </button>
         </div>
 
         {/* Benefits Preview */}
-        <div className="mt-5 p-3 rounded-xl bg-amber-950/20 border border-amber-500/20 flex items-center justify-between text-[11px] text-amber-200/80 font-mono">
+        <div className="mt-5 p-3 rounded-xl bg-amber-950/20 border border-amber-500/20 flex items-center justify-between text-[11px] text-amber-200/80">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
             <span>VIP Benefits: 77 Exclusive Games • 24K Gold 3D Scene</span>
           </div>
-          <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-black text-[9px]">
+          <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-bold text-[9px]">
             ACTIVE
           </span>
         </div>

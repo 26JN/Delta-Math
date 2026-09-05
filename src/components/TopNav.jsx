@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import {
   Search,
   X,
@@ -10,11 +11,10 @@ import {
   Circle,
   Grid,
   Layers,
-  Sparkles,
-  Gamepad2,
   Star,
   Crown,
   LayoutGrid,
+  Box,
 } from 'lucide-react';
 import { soundFX } from '../utils/audio.js';
 
@@ -38,38 +38,88 @@ export const TopNav = ({
   isVipUnlocked = false,
   onOpenVipModal,
   onOpenCatalog,
+  viewMode = 'spatial',
+  onToggleViewMode,
 }) => {
   return (
-    <header className="absolute top-0 left-0 right-0 z-30 pointer-events-none p-3 sm:p-4 flex flex-col gap-3">
-      {/* Top Banner Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 w-full max-w-7xl mx-auto">
-        {/* Brand / Logo */}
-        <div className="pointer-events-auto flex items-center gap-3 bg-black/40 backdrop-blur-xl px-3.5 py-2 rounded-2xl border border-white/10 shadow-2xl">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00FFCC] to-[#7000FF] text-black font-black shadow-lg shadow-[#00FFCC]/30">
-            <Gamepad2 className="w-5 h-5 text-black" />
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FFCC] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00FFCC]"></span>
+    <motion.header
+      initial={{ y: -25, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute top-0 left-0 right-0 z-30 pointer-events-none p-3 sm:p-4 flex flex-col gap-2.5"
+    >
+      {/* Top Banner Navigation Row */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 w-full max-w-7xl mx-auto">
+        {/* Apple Brand / Logo */}
+        <div className="pointer-events-auto flex items-center gap-3 bg-[#0a0c12]/80 backdrop-blur-3xl px-3.5 py-2 rounded-2xl border border-white/[0.1] shadow-2xl">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-tr from-[#2997ff] to-[#0071e3] text-white font-bold shadow-lg shadow-[#2997ff]/25">
+            <Box className="w-4 h-4 text-white" />
+            <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2997ff] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2997ff]"></span>
             </span>
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black tracking-tight text-white font-['Chakra_Petch'] leading-none">
-                UNBLOCKED <span className="text-[#00FFCC]">3D</span> HUB
+              <h1 className="text-xs sm:text-sm font-bold tracking-tight text-white leading-none">
+                Spatial Arcade
               </h1>
-              <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/5 text-[#00FFCC] border border-white/15">
-                SECURE JSON
+              <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/[0.08] text-[#2997ff] border border-white/[0.1]">
+                4K RETINA
               </span>
             </div>
-            <p className="text-[10px] text-white/50 uppercase tracking-[0.2em] font-mono flex items-center gap-1.5 mt-0.5">
-              <span>{totalGames} CARTRIDGES</span>
+            <p className="text-[10px] text-white/50 tracking-wider flex items-center gap-1.5 mt-0.5">
+              <span>{totalGames} Titles</span>
               <span className="text-white/20">•</span>
-              <span className="text-amber-300 flex items-center gap-0.5 font-bold">
-                <Star className="w-2.5 h-2.5 fill-amber-300" /> {favCount} SAVED
+              <span className="text-amber-300 flex items-center gap-0.5 font-medium">
+                <Star className="w-2.5 h-2.5 fill-amber-300" /> {favCount} Saved
               </span>
             </p>
           </div>
+        </div>
+
+        {/* View Mode Toggle: 3D Spatial vs 4K Retina Showcase (Fluid Apple Segmented Control) */}
+        <div className="pointer-events-auto relative flex items-center p-1 bg-[#0a0c12]/80 backdrop-blur-3xl rounded-2xl border border-white/[0.1] shadow-2xl">
+          <button
+            onClick={() => {
+              soundFX.playHover();
+              if (onToggleViewMode) onToggleViewMode('spatial');
+            }}
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none z-10 ${
+              viewMode === 'spatial' ? 'text-black' : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {viewMode === 'spatial' && (
+              <motion.div
+                layoutId="activeViewTab"
+                className="absolute inset-0 bg-white rounded-xl shadow-md -z-10"
+                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+              />
+            )}
+            <Box className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">3D Studio</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundFX.playHover();
+              if (onToggleViewMode) onToggleViewMode('retina');
+            }}
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none z-10 ${
+              viewMode === 'retina' ? 'text-black' : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {viewMode === 'retina' && (
+              <motion.div
+                layoutId="activeViewTab"
+                className="absolute inset-0 bg-white rounded-xl shadow-md -z-10"
+                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+              />
+            )}
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Retina Showcase</span>
+          </button>
         </div>
 
         {/* Center: Search Bar */}
@@ -79,10 +129,10 @@ export const TopNav = ({
             <input
               id="search-input"
               type="text"
-              placeholder="Search 3D library (Slope, Mario, Moto X3M...)"
+              placeholder="Search games (Minecraft, Roblox, Slope, 1v1.lol...)"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 rounded-xl bg-white/5 backdrop-blur-xl border border-white/15 text-white placeholder-white/40 text-xs sm:text-sm focus:outline-none focus:border-[#00FFCC] focus:ring-1 focus:ring-[#00FFCC] focus:bg-white/10 transition shadow-2xl"
+              className="w-full pl-9 pr-8 py-2 rounded-2xl bg-[#0a0c12]/80 backdrop-blur-3xl border border-white/[0.1] text-white placeholder-white/40 text-xs sm:text-sm focus:outline-none focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff] transition shadow-2xl"
             />
             {searchQuery && (
               <button
@@ -96,7 +146,7 @@ export const TopNav = ({
         </div>
 
         {/* Right: Quick Action Controls */}
-        <div className="pointer-events-auto flex items-center gap-1.5 bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+        <div className="pointer-events-auto flex items-center gap-1.5 bg-[#0a0c12]/80 backdrop-blur-3xl p-1.5 rounded-2xl border border-white/[0.1] shadow-2xl">
           {/* Catalog Drawer Launcher */}
           <button
             id="open-catalog-btn"
@@ -104,11 +154,11 @@ export const TopNav = ({
               soundFX.playSelect();
               if (onOpenCatalog) onOpenCatalog();
             }}
-            title="Browse all game thumbnails directly in explorer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white hover:text-[#00FFCC] border border-white/15 text-xs font-bold transition shadow-sm cursor-pointer"
+            title="Browse all game thumbnails in catalog drawer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-white text-xs font-semibold transition cursor-pointer active:scale-95"
           >
-            <LayoutGrid className="w-4 h-4 text-[#00FFCC]" />
-            <span className="hidden sm:inline">Catalog</span>
+            <LayoutGrid className="w-3.5 h-3.5 text-[#2997ff]" />
+            <span className="hidden sm:inline">Drawer</span>
           </button>
 
           {/* VIP Section Passkey Button */}
@@ -121,16 +171,18 @@ export const TopNav = ({
             title={
               isVipUnlocked
                 ? 'VIP Executive Vault Active (220+ Games Unlocked)'
-                : 'Unlock VIP Executive Vault (Enter Passkey)'
+                : 'Unlock VIP Executive Vault'
             }
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-['Chakra_Petch'] transition cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer active:scale-95 ${
               isVipUnlocked
-                ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 text-black shadow-[0_0_20px_rgba(245,158,11,0.6)] border border-amber-300 animate-pulse'
-                : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-400/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.5)] border border-amber-300'
+                : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-400/30'
             }`}
           >
-            <Crown className={`w-4 h-4 ${isVipUnlocked ? 'fill-black text-black' : 'text-amber-400'}`} />
-            <span>{isVipUnlocked ? 'VIP ACTIVE' : 'VIP VAULT'}</span>
+            <Crown
+              className={`w-3.5 h-3.5 ${isVipUnlocked ? 'fill-black text-black' : 'text-amber-400'}`}
+            />
+            <span>{isVipUnlocked ? 'VIP Active' : 'VIP Vault'}</span>
           </button>
 
           {/* Random Game */}
@@ -141,93 +193,86 @@ export const TopNav = ({
               onRandomGame();
             }}
             title="Launch Random Game"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#7000FF] to-violet-600 hover:from-[#7000FF] hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_15px_rgba(112,0,255,0.4)] border border-white/20 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2997ff] hover:bg-[#0071e3] text-white text-xs font-semibold shadow-[0_0_15px_rgba(41,151,255,0.3)] transition cursor-pointer active:scale-95"
           >
-            <Dices className="w-4 h-4" />
-            <span className="hidden sm:inline">Random</span>
+            <Dices className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Random</span>
           </button>
 
-          {/* Add Game button */}
+          {/* Add Game Button */}
           <button
-            id="add-game-btn"
-            onClick={() => {
-              soundFX.playSelect();
-              onOpenAddModal();
-            }}
-            title="Add Custom Iframe Game"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-[#00FFCC] text-[#00FFCC] hover:text-black border border-[#00FFCC]/40 hover:border-[#00FFCC] text-xs font-bold transition shadow-[0_0_15px_rgba(0,255,204,0.15)] cursor-pointer"
+            onClick={onOpenAddModal}
+            title="Add Custom Game URL"
+            className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white/80 hover:text-white transition cursor-pointer active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Game</span>
+            <Plus className="w-3.5 h-3.5" />
           </button>
 
-          {/* 3D Layout mode toggles */}
-          <div className="hidden lg:flex items-center gap-0.5 px-1 py-0.5 bg-black/40 rounded-xl border border-white/10">
-            <button
-              onClick={() => {
-                soundFX.playHover();
-                onChangeLayout('ring');
-              }}
-              title="Ring Orbit Layout"
-              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                layoutMode === 'ring'
-                  ? 'bg-[#00FFCC]/20 text-[#00FFCC] border border-[#00FFCC]/60 shadow-[0_0_10px_rgba(0,255,204,0.2)]'
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              <Circle className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => {
-                soundFX.playHover();
-                onChangeLayout('grid');
-              }}
-              title="Matrix Grid Layout"
-              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                layoutMode === 'grid'
-                  ? 'bg-[#00FFCC]/20 text-[#00FFCC] border border-[#00FFCC]/60 shadow-[0_0_10px_rgba(0,255,204,0.2)]'
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              <Grid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => {
-                soundFX.playHover();
-                onChangeLayout('helix');
-              }}
-              title="Helix Spiral Layout"
-              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                layoutMode === 'helix'
-                  ? 'bg-[#00FFCC]/20 text-[#00FFCC] border border-[#00FFCC]/60 shadow-[0_0_10px_rgba(0,255,204,0.2)]'
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {/* 3D Layout Switcher (spatial mode only) */}
+          {viewMode === 'spatial' && (
+            <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-white/[0.1]">
+              <button
+                onClick={() => onChangeLayout('ring')}
+                title="Ring Layout (Vision Pro Cylinder)"
+                className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                  layoutMode === 'ring'
+                    ? 'bg-white text-black font-bold shadow-xs'
+                    : 'text-white/40 hover:text-white'
+                }`}
+              >
+                <Circle className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onChangeLayout('grid')}
+                title="Grid Matrix Layout"
+                className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                  layoutMode === 'grid'
+                    ? 'bg-white text-black font-bold shadow-xs'
+                    : 'text-white/40 hover:text-white'
+                }`}
+              >
+                <Grid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onChangeLayout('helix')}
+                title="Helix Spiral Layout"
+                className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                  layoutMode === 'helix'
+                    ? 'bg-white text-black font-bold shadow-xs'
+                    : 'text-white/40 hover:text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
-          {/* Auto Rotate Toggle */}
-          <button
-            onClick={onToggleAutoRotate}
-            title={autoRotate ? 'Pause 3D orbit rotation' : 'Resume 3D orbit rotation'}
-            className={`p-2 rounded-xl border transition cursor-pointer ${
-              autoRotate
-                ? 'bg-white/15 border-white/20 text-[#00FFCC]'
-                : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
-            }`}
-          >
-            <RotateCw className={`w-3.5 h-3.5 ${autoRotate ? 'animate-spin' : ''}`} style={{ animationDuration: '8s' }} />
-          </button>
+          {/* Auto Rotate Toggle (spatial mode only) */}
+          {viewMode === 'spatial' && (
+            <button
+              onClick={onToggleAutoRotate}
+              title={autoRotate ? 'Pause 3D orbit rotation' : 'Resume 3D orbit rotation'}
+              className={`p-2 rounded-xl border transition cursor-pointer active:scale-95 ${
+                autoRotate
+                  ? 'bg-white/[0.12] border-white/[0.15] text-[#2997ff]'
+                  : 'bg-white/[0.04] border-white/[0.08] text-white/40 hover:text-white'
+              }`}
+            >
+              <RotateCw
+                className={`w-3.5 h-3.5 ${autoRotate ? 'animate-spin' : ''}`}
+                style={{ animationDuration: '8s' }}
+              />
+            </button>
+          )}
 
           {/* Sound Toggle */}
           <button
             onClick={onToggleSound}
             title={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
-            className={`p-2 rounded-xl border transition cursor-pointer ${
+            className={`p-2 rounded-xl border transition cursor-pointer active:scale-95 ${
               soundEnabled
-                ? 'bg-white/15 border-white/20 text-[#00FFCC]'
-                : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
+                ? 'bg-white/[0.12] border-white/[0.15] text-[#2997ff]'
+                : 'bg-white/[0.04] border-white/[0.08] text-white/40 hover:text-white'
             }`}
           >
             {soundEnabled ? (
@@ -237,7 +282,7 @@ export const TopNav = ({
             )}
           </button>
 
-          {/* Discreet DeltaMath Disguise / Cloak button */}
+          {/* Stealth DeltaMath Cloak button */}
           <button
             id="deltamath-cloak-btn"
             onClick={() => {
@@ -246,18 +291,18 @@ export const TopNav = ({
                 onCloakToDeltaMath();
               }
             }}
-            title="Instant Stealth Cloak: Return to DeltaMath"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-600/30 hover:bg-[#0047AB] border border-blue-400/40 text-blue-200 hover:text-white text-xs font-bold transition shadow-[0_0_12px_rgba(0,71,171,0.3)] cursor-pointer"
+            title="Instant Stealth Cloak: Return to DeltaMath [ESC]"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-600/20 hover:bg-[#0071e3] border border-blue-400/30 text-blue-200 hover:text-white text-xs font-semibold transition shadow-sm cursor-pointer active:scale-95"
           >
             <span className="font-serif font-black text-sm text-blue-300">Δ</span>
-            <span className="hidden xl:inline">DeltaMath</span>
+            <span className="hidden xl:inline">DeltaMath Cloak</span>
           </button>
         </div>
       </div>
 
-      {/* Category Pills Row */}
+      {/* Category Pills Row (Apple-grade floating pill bar with sliding spring highlight) */}
       <div className="pointer-events-auto flex items-center justify-center gap-1.5 overflow-x-auto py-1 px-2 no-scrollbar max-w-full mx-auto">
-        <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+        <div className="flex items-center gap-1 bg-[#0a0c12]/80 backdrop-blur-3xl p-1.5 rounded-2xl border border-white/[0.1] shadow-2xl">
           {categories.map((cat) => {
             const isSelected = activeCategory === cat;
             return (
@@ -267,15 +312,24 @@ export const TopNav = ({
                   soundFX.playHover();
                   onSelectCategory(cat);
                 }}
-                className={`px-3.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#00FFCC] text-black font-extrabold shadow-[0_0_15px_#00FFCC] border border-[#00FFCC]'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 border border-transparent'
+                className={`relative px-3.5 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-colors cursor-pointer select-none z-10 ${
+                  isSelected ? 'text-black font-semibold' : 'text-white/70 hover:text-white'
                 }`}
               >
+                {isSelected && (
+                  <motion.div
+                    layoutId="activeCategoryPill"
+                    className="absolute inset-0 bg-white rounded-xl shadow-md -z-10"
+                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                  />
+                )}
                 {cat === 'Favorites' ? (
                   <span className="flex items-center gap-1">
-                    <Star className={`w-3 h-3 ${isSelected ? 'fill-black text-black' : 'fill-amber-300 text-amber-300'}`} />
+                    <Star
+                      className={`w-3 h-3 ${
+                        isSelected ? 'fill-black text-black' : 'fill-amber-300 text-amber-300'
+                      }`}
+                    />
                     Favorites
                   </span>
                 ) : (
@@ -286,6 +340,6 @@ export const TopNav = ({
           })}
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };

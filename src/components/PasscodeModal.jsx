@@ -142,7 +142,7 @@ export const PasscodeModal = ({ isOpen, onClose, onSuccess }) => {
             ) : isError ? (
               <ShieldAlert className="w-7 h-7 text-red-400" />
             ) : (
-              <Lock className="w-7 h-7 text-[#00ffcc]" />
+              <Lock className="w-7 h-7 text-[#2997ff]" />
             )}
           </div>
 
@@ -180,8 +180,8 @@ export const PasscodeModal = ({ isOpen, onClose, onSuccess }) => {
                   : isError
                   ? 'border-red-500/70 bg-red-500/10 text-red-300'
                   : digit
-                  ? 'border-[#00ffcc] bg-white/10 text-white shadow-[0_0_12px_rgba(0,255,204,0.3)]'
-                  : 'border-white/15 bg-white/5 text-white/80 focus:border-[#00ffcc] focus:bg-white/10'
+                  ? 'border-[#2997ff] bg-white/10 text-white shadow-[0_0_12px_rgba(41,151,255,0.3)]'
+                  : 'border-white/15 bg-white/5 text-white/80 focus:border-[#2997ff] focus:bg-white/10'
               }`}
             />
           ))}
@@ -225,7 +225,7 @@ export const PasscodeModal = ({ isOpen, onClose, onSuccess }) => {
         {/* Discreet security footer */}
         <div className="mt-5 text-center">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono text-white/40 bg-white/5 border border-white/10">
-            <KeyRound className="w-3 h-3 text-[#00ffcc]" />
+            <KeyRound className="w-3 h-3 text-[#2997ff]" />
             <span>DeltaMath Classroom Security Active</span>
           </span>
         </div>
